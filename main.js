@@ -1,12 +1,24 @@
 import GameState from './game_engine/GameState.js';
 import GameCanvas from './game_engine/GameCanvas.js';
-import { questions } from './data/questions.js';
+import { questions as questionsEasy } from './data/questions_easy.js';
+import { questions as questionsNormal } from './data/questions_normal.js';
+import { questions as questionsHard } from './data/questions_hard.js';
 import { generateReportHTML } from './report.js';
 
 const state = new GameState();
 const canvasEl = document.getElementById('game-canvas');
 let gameCanvas;
 let selectedDifficulty = 'normal'; // easy, normal, hard
+
+// 난이도별 문항
+const questionsByDifficulty = {
+    easy: questionsEasy,
+    normal: questionsNormal,
+    hard: questionsHard
+};
+
+// 현재 사용할 문항 (난이도 선택 후 설정됨)
+let questions = questionsNormal;
 
 // Difficulty settings
 const difficultySettings = {
@@ -82,6 +94,8 @@ function init() {
             document.querySelectorAll('.difficulty-btn').forEach(b => b.classList.remove('selected'));
             btn.classList.add('selected');
             selectedDifficulty = btn.dataset.difficulty;
+            // 난이도에 맞는 문항 로드
+            questions = questionsByDifficulty[selectedDifficulty];
         });
     });
 }
@@ -170,6 +184,9 @@ function startGame() {
     state.start();
     showScreen(null);
     ui.hud.classList.remove('hidden');
+
+    // Load questions for selected difficulty
+    questions = questionsByDifficulty[selectedDifficulty];
 
     // Apply difficulty settings
     const settings = difficultySettings[selectedDifficulty];
