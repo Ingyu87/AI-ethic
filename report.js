@@ -179,8 +179,13 @@ export function generateReportHTML(state) {
                 .themes-overview h2 { margin-bottom: 20px; color: #333; }
                 .themes-grid {
                     display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+                    grid-template-columns: repeat(3, 1fr);
                     gap: 15px;
+                }
+                @media (max-width: 600px) {
+                    .themes-grid {
+                        grid-template-columns: repeat(2, 1fr);
+                    }
                 }
                 .theme-card {
                     background: #fff;
