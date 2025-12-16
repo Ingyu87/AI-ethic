@@ -69,9 +69,16 @@ export default class GameState {
         const ratio = this.correctCount / Math.max(1, this.currentLevel); // Divide by played levels
         if (this.lives <= 0) return { text: "모험 중단", emoji: "🚑" }; // Game Over case
 
+        // 10% 단위 칭호 시스템
         if (ratio === 1) return { text: "AI 윤리 마스터", emoji: "🏆" };
-        if (ratio >= 0.8) return { text: "AI 수호자", emoji: "🛡️" };
-        if (ratio >= 0.5) return { text: "AI 모험가", emoji: "🌿" };
-        return { text: "AI 새내기", emoji: "🌱" };
+        if (ratio >= 0.9) return { text: "AI 수호자", emoji: "🛡️" };
+        if (ratio >= 0.8) return { text: "AI 전문가", emoji: "⭐" };
+        if (ratio >= 0.7) return { text: "AI 선구자", emoji: "🌟" };
+        if (ratio >= 0.6) return { text: "AI 모험가", emoji: "🧭" };
+        if (ratio >= 0.5) return { text: "AI 탐험가", emoji: "🌿" };
+        if (ratio >= 0.4) return { text: "AI 학습자", emoji: "📖" };
+        if (ratio >= 0.3) return { text: "AI 도전자", emoji: "💪" };
+        if (ratio >= 0.2) return { text: "AI 입문자", emoji: "🌱" };
+        return { text: "AI 새내기", emoji: "🐣" };
     }
 }

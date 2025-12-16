@@ -182,12 +182,12 @@ function startGame() {
 
 // Theme info for HUD
 const themeInfo = [
-    { name: '숲', emoji: '🌲' },
-    { name: '방', emoji: '🏠' },
-    { name: '도서관', emoji: '📚' },
-    { name: '정원', emoji: '🌷' },
-    { name: '도시', emoji: '🏙️' },
-    { name: '우주', emoji: '🚀' }
+    { name: '디지털', emoji: '💻' },
+    { name: '개인정보', emoji: '🔒' },
+    { name: '공정성', emoji: '⚖️' },
+    { name: '팩트체크', emoji: '🔍' },
+    { name: '딥페이크', emoji: '🎭' },
+    { name: '미래', emoji: '🚀' }
 ];
 
 function updateHUD() {
