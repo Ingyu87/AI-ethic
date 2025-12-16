@@ -160,10 +160,26 @@ function startGame() {
     setInterval(updateHUD, 200);
 }
 
+// Theme info for HUD
+const themeInfo = [
+    { name: '숲', emoji: '🌲' },
+    { name: '방', emoji: '🏠' },
+    { name: '도서관', emoji: '📚' },
+    { name: '정원', emoji: '🌷' },
+    { name: '도시', emoji: '🏙️' },
+    { name: '우주', emoji: '🚀' }
+];
+
 function updateHUD() {
     if (state.phase === 'END') return;
     ui.displays.time.textContent = state.getPlayTime();
-    ui.displays.level.textContent = `${state.currentLevel + 1}/30`;
+    
+    // Theme-based level display
+    const themeIdx = Math.floor(state.currentLevel / 5);
+    const levelInTheme = (state.currentLevel % 5) + 1;
+    const theme = themeInfo[themeIdx] || themeInfo[0];
+    ui.displays.level.textContent = `${theme.emoji} ${theme.name} ${levelInTheme}/5`;
+    
     ui.displays.score.textContent = state.score;
 
     // Update Lives (Heart Icons)

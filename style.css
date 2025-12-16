@@ -111,6 +111,13 @@ body {
     gap: 8px;
 }
 
+.hud-item.stage-display {
+    background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,243,224,0.9) 100%);
+    font-weight: bold;
+    min-width: 120px;
+    justify-content: center;
+}
+
 /* Start Screen */
 #start-screen {
     background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
