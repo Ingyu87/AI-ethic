@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 윤리 곰돌이 어드벤처</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="game-container">
+        <!-- Arcade Canvas Layer -->
+        <canvas id="game-canvas"></canvas>
+
+        <!-- UI Overlay Layer -->
+        <div id="ui-layer">
+            <!-- HUD (Heads-Up Display) -->
+            <div id="hud" class="hidden">
+                <div class="hud-item timeline">
+                    <span class="icon">⏳</span> <span id="time-display">00:00</span>
+                </div>
+                <div class="hud-item">
+                    <span class="icon">LEVEL</span> <span id="level-display">1/20</span>
+                </div>
+                <div class="hud-item score-box">
+                    <span class="icon">🍯</span> <span id="score-display">0</span>
+                </div>
+                <div class="hud-item items-box" id="active-items">
+                    <!-- Items will appear here -->
+                </div>
+            </div>
+
+            <!-- Screens -->
+            <div id="start-screen" class="screen show">
+                <div class="title-logo">
+                    <h1>AI 윤리<br>곰돌이 어드벤처</h1>
+                    <p>🐻 지혜의 숲을 향해 떠나는 곰돌이의 여행 🐻</p>
+                </div>
+                <button id="start-btn" class="btn-primary pulse">게임 시작!</button>
+            </div>
+
+            <div id="quiz-screen" class="screen hidden">
+                <div class="quiz-card glass-panel">
+                    <div class="timer-bar"><div class="timer-fill" id="quiz-timer-bar"></div></div>
+                    <span class="category-badge" id="quiz-category">Deepfake</span>
+                    <h2 id="quiz-question">질문이 여기에 나옵니다.</h2>
+                    <div class="options-container" id="quiz-options">
+                        <!-- Options injected by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <div id="feedback-screen" class="screen hidden">
+                <div class="feedback-card glass-panel">
+                    <div class="feedback-icon" id="feedback-icon">⭕</div>
+                    <h2 id="feedback-title">정답입니다!</h2>
+                    <p id="feedback-explanation">해설이 나옵니다.</p>
+                    <button id="next-btn" class="btn-secondary">다음으로 이동 ➡️</button>
+                </div>
+            </div>
+
+            <div id="report-screen" class="screen hidden">
+                <div class="report-paper glass-panel">
+                    <h2>🎉 모험 종료! 🎉</h2>
+                    <div class="final-score">
+                        <span id="final-rank-emoji">🏆</span>
+                        <h3 id="final-rank-text">AI 윤리 마스터</h3>
+                    </div>
+                    <div class="score-summary">
+                        <p>총점: <span id="final-score">0</span> 🍯</p>
+                        <p>정답: <span id="final-correct">0</span> / 20</p>
+                        <p>소요 시간: <span id="final-time">00:00</span></p>
+                    </div>
+                    <div class="report-actions">
+                        <button id="download-btn" class="btn-secondary">📄 리포트 다운로드</button>
+                        <button id="restart-btn" class="btn-primary">🔄 다시 하기</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script type="module" src="main.js"></script>
+</body>
+</html>
