@@ -38,10 +38,11 @@ export default class GameState {
         return false;
     }
 
-    recordAnswer(question, isCorrect) {
+    recordAnswer(question, isCorrect, userAnswer) {
         this.history.push({ 
             question: question,  // 전체 question 객체 저장
             isCorrect: isCorrect,
+            userAnswer: userAnswer,  // 사용자가 선택한 답안 텍스트
             level: this.currentLevel
         });
         if (isCorrect) {

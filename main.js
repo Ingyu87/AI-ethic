@@ -283,7 +283,7 @@ function shuffleArray(array) {
 function handleAnswer(selectedOption, question) {
     const isCorrect = selectedOption.isCorrect;
 
-    state.recordAnswer(question, isCorrect);
+    state.recordAnswer(question, isCorrect, selectedOption.text);
     
     // Notify game canvas that question was answered
     gameCanvas.onQuestionAnswered();
