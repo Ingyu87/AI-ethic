@@ -38,8 +38,12 @@ export default class GameState {
         return false;
     }
 
-    recordAnswer(questionId, isCorrect) {
-        this.history.push({ questionId, isCorrect });
+    recordAnswer(question, isCorrect) {
+        this.history.push({ 
+            question: question,  // 전체 question 객체 저장
+            isCorrect: isCorrect,
+            level: this.currentLevel
+        });
         if (isCorrect) {
             this.correctCount++;
             this.score += 100;

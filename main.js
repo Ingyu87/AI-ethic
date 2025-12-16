@@ -118,7 +118,7 @@ function startQuiz() {
 function handleAnswer(selectedOption, question) {
     const isCorrect = selectedOption.isCorrect;
 
-    state.recordAnswer({ question: question, ...question }, isCorrect);
+    state.recordAnswer(question, isCorrect);
 
     ui.feedback.title.textContent = isCorrect ? "정답입니다! 꿀 획득! 🍯" : "오답입니다... 🐝";
     ui.feedback.icon.textContent = isCorrect ? "⭕" : "❌";
@@ -147,10 +147,12 @@ function endGame(isGameOver = false) {
     showScreen('report');
 
     const rank = state.getRank();
+    const totalAnswered = state.history.length;
+    
     ui.report.rankEmoji.textContent = isGameOver ? "💀" : rank.emoji;
     ui.report.rankText.textContent = isGameOver ? "게임 오버 (목숨 소진)" : rank.text;
     ui.report.score.textContent = state.score;
-    ui.report.correct.textContent = state.correctCount;
+    ui.report.correct.textContent = `${state.correctCount} / ${totalAnswered}`;
     ui.report.time.textContent = state.getPlayTime();
 }
 
