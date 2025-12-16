@@ -8,11 +8,11 @@ const canvasEl = document.getElementById('game-canvas');
 let gameCanvas;
 let selectedDifficulty = 'normal'; // easy, normal, hard
 
-// Difficulty settings (speed multiplier)
+// Difficulty settings
 const difficultySettings = {
-    easy: { speed: 180, label: '이지' },
-    normal: { speed: 280, label: '노멀' },
-    hard: { speed: 400, label: '하드' }
+    easy: { speed: 180, enemyRate: 0.25, spawnRate: 0.015, label: '이지' },
+    normal: { speed: 280, enemyRate: 0.40, spawnRate: 0.018, label: '노멀' },
+    hard: { speed: 400, enemyRate: 0.55, spawnRate: 0.025, label: '하드' }
 };
 
 // UI Elements
@@ -173,7 +173,7 @@ function startGame() {
 
     // Apply difficulty settings
     const settings = difficultySettings[selectedDifficulty];
-    gameCanvas.setDifficulty(settings.speed);
+    gameCanvas.setDifficulty(settings);
     gameCanvas.start();
 
     // HUD Loop

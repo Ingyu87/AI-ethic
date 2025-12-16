@@ -101,15 +101,21 @@ export default class GameCanvas {
         this.speed = 280;
         this.bgScrollY = 0;
 
+        // Difficulty settings
+        this.enemyRate = 0.40;    // Base enemy spawn rate
+        this.spawnRate = 0.018;   // Base spawn rate
+
         // Theme progress tracking - must complete 5 questions per theme
         this.questionsInCurrentTheme = 0;
 
         this.initInput();
     }
 
-    setDifficulty(speed) {
-        this.baseSpeed = speed;
-        this.speed = speed;
+    setDifficulty(settings) {
+        this.baseSpeed = settings.speed;
+        this.speed = settings.speed;
+        this.enemyRate = settings.enemyRate;
+        this.spawnRate = settings.spawnRate;
     }
 
     // Called when a question is answered (from main.js)
@@ -248,7 +254,7 @@ export default class GameCanvas {
         if (this.state.phase === 'RUN') {
             this.bgScrollY += this.speed * dt;
 
-            if (Math.random() < 0.018) this.spawnObstacle();
+            if (Math.random() < this.spawnRate) this.spawnObstacle();
 
             this.obstacles.forEach(obs => obs.y += this.speed * dt);
             this.obstacles = this.obstacles.filter(obs => obs.y < this.canvas.height + 100);
@@ -311,8 +317,14 @@ export default class GameCanvas {
         // Ensure items spawn regularly so player can collect them
         // If no item on screen, higher chance to spawn item
         const hasItemOnScreen = this.obstacles.some(o => o.type === 'item' && !o.hit);
-        const itemChance = hasItemOnScreen ? 0.35 : 0.6;
-        const type = Math.random() < itemChance ? 'item' : 'enemy';
+        
+        // Use difficulty-based enemy rate, but ensure items spawn if none on screen
+        let type;
+        if (!hasItemOnScreen) {
+            type = 'item'; // Force item spawn if none on screen
+        } else {
+            type = Math.random() < this.enemyRate ? 'enemy' : 'item';
+        }
 
         this.obstacles.push({ type, lane, y: -70 });
     }
