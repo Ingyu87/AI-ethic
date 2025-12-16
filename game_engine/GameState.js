@@ -12,9 +12,10 @@ export default class GameState {
 
         this.history = []; // { questionId, isCorrect, userAnswer }
         this.phase = 'START';
+        this.difficulty = 'normal'; // easy, normal, hard
     }
 
-    start() {
+    start(difficulty = 'normal') {
         this.currentLevel = 0;
         this.score = 0;
         this.correctCount = 0;
@@ -22,6 +23,7 @@ export default class GameState {
         this.history = [];
         this.startTime = Date.now();
         this.phase = 'RUN';
+        this.difficulty = difficulty;
     }
 
     damage() {

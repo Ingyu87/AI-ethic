@@ -181,7 +181,7 @@ function selectCurrentOption() {
 }
 
 function startGame() {
-    state.start();
+    state.start(selectedDifficulty);
     showScreen(null);
     ui.hud.classList.remove('hidden');
 

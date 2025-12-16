@@ -2,6 +2,15 @@ export function generateReportHTML(state) {
     const rank = state.getRank();
     const date = new Date().toLocaleDateString('ko-KR');
     const totalAnswered = state.history.length;
+    
+    // 난이도 정보
+    const difficultyLabels = {
+        easy: { label: '🐢 이지', desc: '기초 개념, 명확한 정답' },
+        normal: { label: '🐻 노멀', desc: '중간 난이도, 표준 수준' },
+        hard: { label: '🔥 하드', desc: '심화 개념, 복잡한 상황 판단' }
+    };
+    const difficulty = state.difficulty || 'normal';
+    const difficultyInfo = difficultyLabels[difficulty] || difficultyLabels.normal;
 
     // 테마 정보 (6테마 x 5문항)
     const themes = [
@@ -352,8 +361,25 @@ export function generateReportHTML(state) {
                     padding: 40px;
                     text-align: center;
                 }
-                .report-header h1 { font-size: 2rem; margin-bottom: 10px; }
+                .report-header h1 { font-size: 2rem; margin-bottom: 15px; }
+                .header-info {
+                    display: flex;
+                    justify-content: center;
+                    gap: 30px;
+                    flex-wrap: wrap;
+                    margin-top: 10px;
+                }
                 .report-header .date { opacity: 0.9; }
+                .difficulty-info {
+                    opacity: 0.95;
+                    font-size: 1rem;
+                    background: rgba(255,255,255,0.2);
+                    padding: 8px 15px;
+                    border-radius: 20px;
+                }
+                .difficulty-info strong {
+                    font-weight: 700;
+                }
                 
                 .summary-section {
                     display: flex;
@@ -640,13 +666,22 @@ export function generateReportHTML(state) {
             <div class="report-container">
                 <div class="report-header">
                     <h1>📜 AI 윤리 학습 결과 리포트</h1>
-                    <p class="date">생성일: ${date}</p>
+                    <div class="header-info">
+                        <p class="date">생성일: ${date}</p>
+                        <p class="difficulty-info">
+                            <strong>난이도:</strong> ${difficultyInfo.label} (${difficultyInfo.desc})
+                        </p>
+                    </div>
                 </div>
                 
                 <div class="summary-section">
                     <div class="summary-item">
                         <span class="summary-value">${rank.emoji}</span>
                         <span class="summary-label">${rank.text}</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-value">${difficultyInfo.label}</span>
+                        <span class="summary-label">선택 난이도</span>
                     </div>
                     <div class="summary-item">
                         <span class="summary-value">${state.score}</span>
