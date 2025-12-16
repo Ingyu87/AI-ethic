@@ -5,15 +5,46 @@ export default class GameCanvas {
         this.state = gameState;
         this.onEvent = onEvent;
 
-        // Theme colors and settings
+        // Theme settings (6 themes, 5 levels each = 30 levels)
         this.themes = [
-            { name: 'Forest', bg1: '#228B22', bg2: '#90EE90', road: '#8B4513', enemy: '🐝', item: '🍯' },
-            { name: 'Room', bg1: '#8B4513', bg2: '#DEB887', road: '#D2691E', enemy: '🐭', item: '🧀' },
-            { name: 'Library', bg1: '#4A4A4A', bg2: '#8B7355', road: '#654321', enemy: '📚', item: '📖' },
-            { name: 'Garden', bg1: '#32CD32', bg2: '#98FB98', road: '#C0C0C0', enemy: '🐛', item: '🌸' },
-            { name: 'City', bg1: '#2F4F4F', bg2: '#708090', road: '#404040', enemy: '🚗', item: '⭐' },
-            { name: 'Space', bg1: '#0a0a2e', bg2: '#1a1a4e', road: '#2a2a5e', enemy: '☄️', item: '🚀' }
+            { name: 'Forest', bg1: '#228B22', bg2: '#90EE90', road: '#8B4513' },
+            { name: 'Room', bg1: '#8B4513', bg2: '#DEB887', road: '#D2691E' },
+            { name: 'Library', bg1: '#4A4A4A', bg2: '#8B7355', road: '#654321' },
+            { name: 'Garden', bg1: '#32CD32', bg2: '#98FB98', road: '#C0C0C0' },
+            { name: 'City', bg1: '#2F4F4F', bg2: '#708090', road: '#404040' },
+            { name: 'Space', bg1: '#0a0a2e', bg2: '#1a1a4e', road: '#2a2a5e' }
         ];
+
+        // Load images
+        this.images = {
+            forestItems: new Image(),    // game_items.png (bee, honey)
+            themeItems: new Image(),     // theme_enemies_items.png
+            bear: new Image()            // bear_back.png
+        };
+        
+        this.images.forestItems.src = 'assets/game_items.png';
+        this.images.themeItems.src = 'assets/theme_enemies_items.png';
+        this.images.bear.src = 'assets/bear_back.png';
+
+        this.imagesLoaded = 0;
+        this.totalImages = 3;
+        this.assetsReady = false;
+
+        Object.values(this.images).forEach(img => {
+            img.onload = () => {
+                this.imagesLoaded++;
+                if (this.imagesLoaded >= this.totalImages) {
+                    this.assetsReady = true;
+                }
+            };
+            img.onerror = () => {
+                console.warn('Image failed to load:', img.src);
+                this.imagesLoaded++;
+                if (this.imagesLoaded >= this.totalImages) {
+                    this.assetsReady = true;
+                }
+            };
+        });
 
         // Game Entities
         this.bear = {
@@ -24,22 +55,19 @@ export default class GameCanvas {
         };
 
         this.obstacles = [];
-        this.speed = 300;
+        this.speed = 280;
         this.bgScrollY = 0;
-        this.assetsReady = true; // No external assets needed
 
         this.initInput();
     }
 
     initInput() {
-        // Keyboard input
         window.addEventListener('keydown', (e) => {
             if (this.state.phase !== 'RUN') return;
             if (e.key === 'ArrowLeft') this.moveBear(-1);
             if (e.key === 'ArrowRight') this.moveBear(1);
         });
 
-        // Touch/Click input for mobile
         this.canvas.addEventListener('click', (e) => {
             if (this.state.phase !== 'RUN') return;
             const rect = this.canvas.getBoundingClientRect();
@@ -53,7 +81,6 @@ export default class GameCanvas {
             }
         });
 
-        // Touch swipe support
         let touchStartX = 0;
         this.canvas.addEventListener('touchstart', (e) => {
             touchStartX = e.touches[0].clientX;
@@ -98,10 +125,8 @@ export default class GameCanvas {
         if (this.state.phase === 'RUN') {
             this.bgScrollY += this.speed * dt;
 
-            // Spawn obstacles
-            if (Math.random() < 0.02) this.spawnObstacle();
+            if (Math.random() < 0.018) this.spawnObstacle();
 
-            // Move Obstacles
             this.obstacles.forEach(obs => obs.y += this.speed * dt);
             this.obstacles = this.obstacles.filter(obs => obs.y < this.canvas.height + 100);
 
@@ -109,7 +134,7 @@ export default class GameCanvas {
 
             // Bear animation
             this.bear.frameTime += dt;
-            if (this.bear.frameTime > 0.15) {
+            if (this.bear.frameTime > 0.12) {
                 this.bear.frameTime = 0;
                 this.bear.runFrame = (this.bear.runFrame + 1) % 2;
             }
@@ -120,21 +145,17 @@ export default class GameCanvas {
 
     spawnObstacle() {
         const lastObs = this.obstacles[this.obstacles.length - 1];
-        if (lastObs && lastObs.y < 200) return;
+        if (lastObs && lastObs.y < 180) return;
 
         const lane = Math.floor(Math.random() * 3);
-        const type = Math.random() > 0.4 ? 'enemy' : 'item';
+        const type = Math.random() > 0.35 ? 'enemy' : 'item';
 
-        this.obstacles.push({
-            type,
-            lane,
-            y: -60
-        });
+        this.obstacles.push({ type, lane, y: -70 });
     }
 
     checkCollisions() {
         const bearX = this.getLaneX(this.bear.lane);
-        const bearY = this.canvas.height * 0.8;
+        const bearY = this.canvas.height * 0.78;
 
         this.obstacles.forEach((obs) => {
             if (obs.hit) return;
@@ -142,7 +163,7 @@ export default class GameCanvas {
             const obsX = this.getLaneX(obs.lane);
             const dist = Math.sqrt((bearX - obsX) ** 2 + (bearY - obs.y) ** 2);
 
-            if (dist < 50) {
+            if (dist < 45) {
                 obs.hit = true;
                 if (obs.type === 'item') {
                     this.state.phase = 'QUIZ_TRANSITION';
@@ -153,19 +174,20 @@ export default class GameCanvas {
                         this.bear.invincible = 1.0;
                     }
                 }
-                obs.y = 9999;
             }
         });
     }
 
     getLaneX(lane) {
-        const colWidth = this.canvas.width / 3;
-        return (colWidth * lane) + (colWidth / 2);
+        const roadWidth = this.canvas.width * 0.8;
+        const roadX = (this.canvas.width - roadWidth) / 2;
+        const laneWidth = roadWidth / 3;
+        return roadX + (laneWidth * lane) + (laneWidth / 2);
     }
 
     getTheme() {
         const themeIdx = Math.floor(this.state.currentLevel / 5) % 6;
-        return this.themes[themeIdx];
+        return { ...this.themes[themeIdx], index: themeIdx };
     }
 
     draw() {
@@ -178,13 +200,13 @@ export default class GameCanvas {
         const ctx = this.ctx;
         const theme = this.getTheme();
 
-        // 1. Background with scrolling effect
+        // 1. Background
         this.drawBackground(ctx, w, h, theme);
 
-        // 2. Road/Lanes
+        // 2. Road
         this.drawRoad(ctx, w, h, theme);
 
-        // 3. Obstacles (enemies & items)
+        // 3. Obstacles
         this.drawObstacles(ctx, theme);
 
         // 4. Bear
@@ -195,12 +217,19 @@ export default class GameCanvas {
             ctx.fillStyle = 'rgba(255,0,0,0.3)';
             ctx.fillRect(0, 0, w, h);
         }
+
+        // 6. Loading overlay
+        if (!this.assetsReady) {
+            ctx.fillStyle = 'rgba(0,0,0,0.7)';
+            ctx.fillRect(0, 0, w, h);
+            ctx.fillStyle = '#fff';
+            ctx.font = '20px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('로딩 중...', w/2, h/2);
+        }
     }
 
     drawBackground(ctx, w, h, theme) {
-        // Scrolling gradient background
-        const scrollOffset = (this.bgScrollY % 100) / 100;
-        
         const gradient = ctx.createLinearGradient(0, 0, 0, h);
         gradient.addColorStop(0, theme.bg1);
         gradient.addColorStop(0.5, theme.bg2);
@@ -208,11 +237,11 @@ export default class GameCanvas {
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, w, h);
 
-        // Scrolling decoration lines
-        ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+        // Decorative scrolling lines
+        ctx.strokeStyle = 'rgba(255,255,255,0.08)';
         ctx.lineWidth = 2;
-        const lineSpacing = 80;
-        const offset = (this.bgScrollY % lineSpacing);
+        const lineSpacing = 60;
+        const offset = this.bgScrollY % lineSpacing;
         for (let y = offset - lineSpacing; y < h + lineSpacing; y += lineSpacing) {
             ctx.beginPath();
             ctx.moveTo(0, y);
@@ -222,23 +251,24 @@ export default class GameCanvas {
     }
 
     drawRoad(ctx, w, h, theme) {
-        // Center road
         const roadWidth = w * 0.8;
         const roadX = (w - roadWidth) / 2;
         
+        // Road surface
         ctx.fillStyle = theme.road;
         ctx.fillRect(roadX, 0, roadWidth, h);
 
-        // Lane dividers (dashed lines)
-        ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+        // Lane dividers (animated dashes)
+        ctx.strokeStyle = 'rgba(255,255,255,0.6)';
         ctx.lineWidth = 3;
-        ctx.setLineDash([30, 20]);
+        ctx.setLineDash([25, 18]);
         
         const laneWidth = roadWidth / 3;
+        const dashOffset = this.bgScrollY % 43;
+        ctx.lineDashOffset = -dashOffset;
+
         for (let i = 1; i < 3; i++) {
             const x = roadX + laneWidth * i;
-            const dashOffset = (this.bgScrollY % 50);
-            ctx.lineDashOffset = -dashOffset;
             ctx.beginPath();
             ctx.moveTo(x, 0);
             ctx.lineTo(x, h);
@@ -247,7 +277,7 @@ export default class GameCanvas {
         ctx.setLineDash([]);
 
         // Road edges
-        ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+        ctx.strokeStyle = '#fff';
         ctx.lineWidth = 4;
         ctx.beginPath();
         ctx.moveTo(roadX, 0);
@@ -259,110 +289,137 @@ export default class GameCanvas {
 
     drawBear(ctx, w, h) {
         const bearX = this.getLaneX(this.bear.lane);
-        const bearY = h * 0.8;
+        const bearY = h * 0.78;
 
         // Blink when invincible
         if (this.bear.invincible > 0 && Math.floor(Date.now() / 100) % 2 === 0) {
             return;
         }
 
+        const img = this.images.bear;
+        if (img && img.complete && img.naturalWidth > 0) {
+            // Image: 2 cols x 2 rows, use top row for animation
+            const frameW = img.width / 2;
+            const frameH = img.height / 2;
+            const frame = this.bear.runFrame % 2;
+            
+            const size = 90;
+            ctx.drawImage(
+                img,
+                frame * frameW, 0, frameW, frameH,
+                bearX - size/2, bearY - size/2, size, size
+            );
+        } else {
+            // Fallback: draw bear with canvas
+            this.drawBearFallback(ctx, bearX, bearY);
+        }
+    }
+
+    drawBearFallback(ctx, bearX, bearY) {
         ctx.save();
         ctx.translate(bearX, bearY);
 
         // Body
         ctx.fillStyle = '#8B4513';
         ctx.beginPath();
-        ctx.ellipse(0, 0, 30, 35, 0, 0, Math.PI * 2);
+        ctx.ellipse(0, 0, 25, 30, 0, 0, Math.PI * 2);
         ctx.fill();
 
         // Head
         ctx.fillStyle = '#A0522D';
         ctx.beginPath();
-        ctx.arc(0, -40, 25, 0, Math.PI * 2);
+        ctx.arc(0, -35, 22, 0, Math.PI * 2);
         ctx.fill();
 
         // Ears
         ctx.fillStyle = '#8B4513';
         ctx.beginPath();
-        ctx.arc(-18, -55, 10, 0, Math.PI * 2);
-        ctx.arc(18, -55, 10, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Inner ears
-        ctx.fillStyle = '#DEB887';
-        ctx.beginPath();
-        ctx.arc(-18, -55, 5, 0, Math.PI * 2);
-        ctx.arc(18, -55, 5, 0, Math.PI * 2);
+        ctx.arc(-15, -50, 8, 0, Math.PI * 2);
+        ctx.arc(15, -50, 8, 0, Math.PI * 2);
         ctx.fill();
 
         // Snout
         ctx.fillStyle = '#DEB887';
         ctx.beginPath();
-        ctx.ellipse(0, -35, 12, 8, 0, 0, Math.PI * 2);
+        ctx.ellipse(0, -30, 10, 7, 0, 0, Math.PI * 2);
         ctx.fill();
 
         // Nose
         ctx.fillStyle = '#333';
         ctx.beginPath();
-        ctx.ellipse(0, -38, 5, 4, 0, 0, Math.PI * 2);
+        ctx.ellipse(0, -33, 4, 3, 0, 0, Math.PI * 2);
         ctx.fill();
 
         // Eyes
-        ctx.fillStyle = '#333';
         ctx.beginPath();
-        ctx.arc(-10, -45, 4, 0, Math.PI * 2);
-        ctx.arc(10, -45, 4, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Eye shine
-        ctx.fillStyle = '#fff';
-        ctx.beginPath();
-        ctx.arc(-11, -46, 1.5, 0, Math.PI * 2);
-        ctx.arc(9, -46, 1.5, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Running legs animation
-        const legOffset = this.bear.runFrame === 0 ? 5 : -5;
-        ctx.fillStyle = '#8B4513';
-        
-        // Left leg
-        ctx.beginPath();
-        ctx.ellipse(-12, 30 + legOffset, 10, 15, 0, 0, Math.PI * 2);
-        ctx.fill();
-        
-        // Right leg
-        ctx.beginPath();
-        ctx.ellipse(12, 30 - legOffset, 10, 15, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Arms
-        ctx.beginPath();
-        ctx.ellipse(-28, -5 + legOffset, 8, 18, -0.3, 0, Math.PI * 2);
-        ctx.ellipse(28, -5 - legOffset, 8, 18, 0.3, 0, Math.PI * 2);
+        ctx.arc(-8, -40, 3, 0, Math.PI * 2);
+        ctx.arc(8, -40, 3, 0, Math.PI * 2);
         ctx.fill();
 
         ctx.restore();
     }
 
     drawObstacles(ctx, theme) {
-        ctx.font = '50px serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
+        const themeIdx = theme.index;
 
         this.obstacles.forEach(obs => {
             if (obs.hit) return;
             
             const x = this.getLaneX(obs.lane);
-            const emoji = obs.type === 'enemy' ? theme.enemy : theme.item;
-            
+            const size = 60;
+
             // Shadow
-            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.fillStyle = 'rgba(0,0,0,0.25)';
             ctx.beginPath();
-            ctx.ellipse(x, obs.y + 25, 20, 8, 0, 0, Math.PI * 2);
+            ctx.ellipse(x, obs.y + size/2 + 5, size/3, 8, 0, 0, Math.PI * 2);
             ctx.fill();
 
-            // Emoji
-            ctx.fillText(emoji, x, obs.y);
+            let drawn = false;
+
+            if (themeIdx === 0) {
+                // Forest theme: use game_items.png (2x2 grid)
+                // Row 0: bee (enemy), honey (item)
+                const img = this.images.forestItems;
+                if (img && img.complete && img.naturalWidth > 0) {
+                    const fw = img.width / 2;
+                    const fh = img.height / 2;
+                    const col = obs.type === 'enemy' ? 0 : 1;
+                    ctx.drawImage(img, col * fw, 0, fw, fh, x - size/2, obs.y - size/2, size, size);
+                    drawn = true;
+                }
+            } else {
+                // Other themes: use theme_enemies_items.png (3 cols x 5 rows)
+                // Col 0: text label, Col 1: enemy, Col 2: item
+                const img = this.images.themeItems;
+                if (img && img.complete && img.naturalWidth > 0) {
+                    const fw = img.width / 3;
+                    const fh = img.height / 5;
+                    const row = themeIdx - 1; // themes 1-5 map to rows 0-4
+                    const col = obs.type === 'enemy' ? 1 : 2;
+                    
+                    if (row >= 0 && row < 5) {
+                        ctx.drawImage(img, col * fw, row * fh, fw, fh, x - size/2, obs.y - size/2, size, size);
+                        drawn = true;
+                    }
+                }
+            }
+
+            // Fallback: emoji
+            if (!drawn) {
+                const emojis = {
+                    0: { enemy: '🐝', item: '🍯' },
+                    1: { enemy: '🐭', item: '🧀' },
+                    2: { enemy: '📖', item: '📜' },
+                    3: { enemy: '🐛', item: '🥕' },
+                    4: { enemy: '🚁', item: '💾' },
+                    5: { enemy: '☄️', item: '⭐' }
+                };
+                const emoji = emojis[themeIdx]?.[obs.type] || '❓';
+                ctx.font = '45px serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(emoji, x, obs.y);
+            }
         });
     }
 }
