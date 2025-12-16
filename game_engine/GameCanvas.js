@@ -133,17 +133,17 @@ export default class GameCanvas {
     }
 
     initBearSprite() {
-        // Bear Sprite: 3 frames of running animation in 1 row
+        // Bear Sprite: 3 frames in 2x2 grid (2 on top row, 1 on bottom row)
         const bearImg = this.assets.bear;
         if (!bearImg || bearImg.width === 0) return false;
 
-        const bearW = bearImg.width / 3;
-        const bearH = bearImg.height;
+        const bearW = bearImg.width / 2;  // 2 columns
+        const bearH = bearImg.height / 2; // 2 rows
 
         this.bear.sprite = new Sprite(bearImg, bearW, bearH, {
-            'run': { row: 0, frames: 3 },
+            'run': { row: 0, frames: 2 }, // Use 2 frames from top row for smooth animation
             'idle': { row: 0, frames: 1 }
-        }, 8);
+        }, 6);
 
         return true;
     }
@@ -267,10 +267,9 @@ export default class GameCanvas {
     getThemeAssets() {
         // 6 Themes
         const themeIdx = Math.floor(this.state.currentLevel / 5);
-        // bg_vertical has 6 columns? Or rows? 
-        // Prompt: "stacked horizontally". So 6 Columns.
+        // bg_vertical has 6 columns stacked horizontally
         const bgImg = this.assets.bg;
-        const colW = bgImg.width / 6;
+        const colW = bgImg && bgImg.width ? bgImg.width / 6 : 0;
         const sourceX = (themeIdx % 6) * colW;
 
         return { bgImg, sourceX, colW, themeIdx };
@@ -288,22 +287,28 @@ export default class GameCanvas {
         // 1. BG (Vertical Scroll)
         const { bgImg, sourceX, colW, themeIdx } = this.getThemeAssets();
 
-        // We draw a slice of the source image (one vertical strip)
-        // And scroll its source Y? No, it's safer to scroll Dest Y for seamless.
-        // Assuming BG is seamless vertically.
+        // Safety check for background image
+        if (!bgImg || !bgImg.width || !bgImg.height) {
+            // Draw fallback gradient background
+            const gradient = ctx.createLinearGradient(0, 0, 0, h);
+            gradient.addColorStop(0, '#87CEEB');
+            gradient.addColorStop(1, '#228B22');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, w, h);
+        } else {
+            const scrollY = this.bgScrollY % h;
 
-        const scrollY = this.bgScrollY % h;
-
-        // Draw 1 (Top part moving down)
-        ctx.drawImage(bgImg,
-            sourceX, 0, colW, bgImg.height,
-            0, scrollY - h, w, h
-        );
-        // Draw 2 (Bottom part coming in)
-        ctx.drawImage(bgImg,
-            sourceX, 0, colW, bgImg.height,
-            0, scrollY, w, h
-        );
+            // Draw 1 (Top part moving down)
+            ctx.drawImage(bgImg,
+                sourceX, 0, colW, bgImg.height,
+                0, scrollY - h, w, h
+            );
+            // Draw 2 (Bottom part coming in)
+            ctx.drawImage(bgImg,
+                sourceX, 0, colW, bgImg.height,
+                0, scrollY, w, h
+            );
+        }
 
         // 2. Lanes (Guides)
         ctx.strokeStyle = 'rgba(255,255,255,0.2)';
