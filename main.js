@@ -20,7 +20,7 @@ const ui = {
         time: document.getElementById('time-display'),
         level: document.getElementById('level-display'),
         score: document.getElementById('score-display'),
-        lives: document.getElementById('active-items') // Reuse item box for lives
+        lives: document.getElementById('active-items')
     },
     quiz: {
         category: document.getElementById('quiz-category'),
@@ -48,6 +48,11 @@ const ui = {
     }
 };
 
+// Quiz keyboard navigation state
+let selectedOptionIndex = 0;
+let currentQuestionOptions = [];
+let currentQuestion = null;
+
 // Start logic
 function init() {
     gameCanvas = new GameCanvas(canvasEl, state, handleGameEvent);
@@ -55,10 +60,93 @@ function init() {
     ui.btns.start.addEventListener('click', startGame);
     ui.btns.next.addEventListener('click', resumeGame);
     ui.btns.download.addEventListener('click', downloadReport);
-    ui.btns.restart.addEventListener('click', () => location.reload()); // FORCE REFRESH TO RESTART
+    ui.btns.restart.addEventListener('click', () => location.reload());
 
     // Setup Lives UI with Hearts
     ui.displays.lives.innerHTML = '';
+
+    // Global keyboard navigation
+    document.addEventListener('keydown', handleGlobalKeyboard);
+}
+
+function handleGlobalKeyboard(e) {
+    // Quiz screen keyboard navigation
+    if (state.phase === 'QUIZ' && !ui.screens.quiz.classList.contains('hidden')) {
+        if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
+            e.preventDefault();
+            navigateOption(-1);
+        } else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
+            e.preventDefault();
+            navigateOption(1);
+        } else if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            selectCurrentOption();
+        } else if (e.key >= '1' && e.key <= '9') {
+            const idx = parseInt(e.key) - 1;
+            if (idx < currentQuestionOptions.length) {
+                selectedOptionIndex = idx;
+                updateOptionHighlight();
+                selectCurrentOption();
+            }
+        }
+    }
+    
+    // Feedback screen - Enter or Space to continue
+    if (!ui.screens.feedback.classList.contains('hidden')) {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            resumeGame();
+        }
+    }
+    
+    // Start screen - Enter to start
+    if (!ui.screens.start.classList.contains('hidden')) {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            startGame();
+        }
+    }
+    
+    // Report screen
+    if (!ui.screens.report.classList.contains('hidden')) {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            downloadReport();
+        } else if (e.key === 'r' || e.key === 'R') {
+            location.reload();
+        }
+    }
+}
+
+function navigateOption(direction) {
+    selectedOptionIndex += direction;
+    
+    // Wrap around
+    if (selectedOptionIndex < 0) {
+        selectedOptionIndex = currentQuestionOptions.length - 1;
+    } else if (selectedOptionIndex >= currentQuestionOptions.length) {
+        selectedOptionIndex = 0;
+    }
+    
+    updateOptionHighlight();
+}
+
+function updateOptionHighlight() {
+    const options = ui.quiz.options.querySelectorAll('.quiz-option');
+    options.forEach((opt, i) => {
+        opt.classList.remove('selected');
+        if (i === selectedOptionIndex) {
+            opt.classList.add('selected');
+            opt.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    });
+}
+
+function selectCurrentOption() {
+    if (currentQuestionOptions.length > 0 && currentQuestion) {
+        const selectedOption = currentQuestionOptions[selectedOptionIndex];
+        handleAnswer(selectedOption, currentQuestion);
+    }
 }
 
 function startGame() {
@@ -96,19 +184,30 @@ function handleGameEvent(event) {
 
 function startQuiz() {
     state.phase = 'QUIZ';
-    const currentQuestion = questions[state.currentLevel];
+    currentQuestion = questions[state.currentLevel];
 
-    if (!currentQuestion) { endGame(); return; } // No more questions?
+    if (!currentQuestion) { endGame(); return; }
+
+    // Reset keyboard navigation
+    selectedOptionIndex = 0;
+    currentQuestionOptions = currentQuestion.options;
 
     ui.quiz.category.textContent = currentQuestion.category;
     ui.quiz.question.textContent = currentQuestion.question;
     ui.quiz.options.innerHTML = '';
 
-    currentQuestion.options.forEach((opt) => {
+    currentQuestion.options.forEach((opt, index) => {
         const btn = document.createElement('div');
-        btn.className = 'quiz-option';
-        btn.textContent = opt.text;
+        btn.className = 'quiz-option' + (index === 0 ? ' selected' : '');
+        btn.innerHTML = `<span class="option-number">${index + 1}</span> ${opt.text}`;
         btn.onclick = () => handleAnswer(opt, currentQuestion);
+        
+        // Touch feedback for mobile
+        btn.addEventListener('touchstart', () => {
+            selectedOptionIndex = index;
+            updateOptionHighlight();
+        }, { passive: true });
+        
         ui.quiz.options.appendChild(btn);
     });
 
