@@ -6,6 +6,14 @@ import { generateReportHTML } from './report.js';
 const state = new GameState();
 const canvasEl = document.getElementById('game-canvas');
 let gameCanvas;
+let selectedDifficulty = 'normal'; // easy, normal, hard
+
+// Difficulty settings (speed multiplier)
+const difficultySettings = {
+    easy: { speed: 180, label: '이지' },
+    normal: { speed: 280, label: '노멀' },
+    hard: { speed: 400, label: '하드' }
+};
 
 // UI Elements
 const ui = {
@@ -67,6 +75,15 @@ function init() {
 
     // Global keyboard navigation
     document.addEventListener('keydown', handleGlobalKeyboard);
+
+    // Difficulty selection
+    document.querySelectorAll('.difficulty-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.difficulty-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            selectedDifficulty = btn.dataset.difficulty;
+        });
+    });
 }
 
 function handleGlobalKeyboard(e) {
@@ -154,6 +171,9 @@ function startGame() {
     showScreen(null);
     ui.hud.classList.remove('hidden');
 
+    // Apply difficulty settings
+    const settings = difficultySettings[selectedDifficulty];
+    gameCanvas.setDifficulty(settings.speed);
     gameCanvas.start();
 
     // HUD Loop
@@ -174,11 +194,13 @@ function updateHUD() {
     if (state.phase === 'END') return;
     ui.displays.time.textContent = state.getPlayTime();
     
-    // Theme-based level display
+    // Theme-based level display - show questions answered in current theme
     const themeIdx = Math.floor(state.currentLevel / 5);
-    const levelInTheme = (state.currentLevel % 5) + 1;
+    const questionsAnsweredInTheme = state.currentLevel % 5;
     const theme = themeInfo[themeIdx] || themeInfo[0];
-    ui.displays.level.textContent = `${theme.emoji} ${theme.name} ${levelInTheme}/5`;
+    
+    // Show progress as "answered/5"
+    ui.displays.level.textContent = `${theme.emoji} ${theme.name} ${questionsAnsweredInTheme}/5`;
     
     ui.displays.score.textContent = state.score;
 
@@ -234,6 +256,9 @@ function handleAnswer(selectedOption, question) {
     const isCorrect = selectedOption.isCorrect;
 
     state.recordAnswer(question, isCorrect);
+    
+    // Notify game canvas that question was answered
+    gameCanvas.onQuestionAnswered();
 
     ui.feedback.title.textContent = isCorrect ? "정답입니다! 꿀 획득! 🍯" : "오답입니다... 🐝";
     ui.feedback.icon.textContent = isCorrect ? "⭕" : "❌";

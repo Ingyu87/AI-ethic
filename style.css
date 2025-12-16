@@ -135,7 +135,59 @@ body {
     text-align: center;
     color: #555;
     font-size: 1.2rem;
-    margin-bottom: 40px;
+    margin-bottom: 20px;
+}
+
+/* Difficulty Selection */
+.difficulty-select {
+    margin-bottom: 25px;
+}
+.difficulty-label {
+    text-align: center;
+    font-weight: bold;
+    color: #555;
+    margin-bottom: 10px;
+    font-size: 1.1rem;
+}
+.difficulty-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+.difficulty-btn {
+    background: white;
+    border: 3px solid #ddd;
+    border-radius: 15px;
+    padding: 15px 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 90px;
+}
+.difficulty-btn:hover {
+    border-color: var(--secondary-color);
+    transform: translateY(-3px);
+}
+.difficulty-btn.selected {
+    border-color: var(--primary-color);
+    background: linear-gradient(135deg, #fff9e6 0%, #fff 100%);
+    box-shadow: 0 0 0 3px rgba(255, 179, 71, 0.3);
+}
+.diff-emoji {
+    font-size: 2rem;
+    margin-bottom: 5px;
+}
+.diff-name {
+    font-weight: bold;
+    font-size: 1rem;
+    color: #333;
+}
+.diff-desc {
+    font-size: 0.75rem;
+    color: #888;
+    margin-top: 3px;
 }
 
 /* Buttons */
@@ -361,7 +413,28 @@ button:active { transform: scale(0.95); }
     
     .title-logo p {
         font-size: 1rem;
-        margin-bottom: 20px;
+        margin-bottom: 15px;
+    }
+    
+    .difficulty-select {
+        margin-bottom: 15px;
+    }
+    
+    .difficulty-btn {
+        padding: 10px 12px;
+        min-width: 75px;
+    }
+    
+    .diff-emoji {
+        font-size: 1.5rem;
+    }
+    
+    .diff-name {
+        font-size: 0.85rem;
+    }
+    
+    .diff-desc {
+        font-size: 0.65rem;
     }
     
     .glass-panel {

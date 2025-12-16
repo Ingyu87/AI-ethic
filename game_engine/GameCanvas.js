@@ -97,10 +97,34 @@ export default class GameCanvas {
         };
 
         this.obstacles = [];
+        this.baseSpeed = 280;
         this.speed = 280;
         this.bgScrollY = 0;
 
+        // Theme progress tracking - must complete 5 questions per theme
+        this.questionsInCurrentTheme = 0;
+
         this.initInput();
+    }
+
+    setDifficulty(speed) {
+        this.baseSpeed = speed;
+        this.speed = speed;
+    }
+
+    // Called when a question is answered (from main.js)
+    onQuestionAnswered() {
+        this.questionsInCurrentTheme++;
+        
+        // Check if theme is complete (5 questions)
+        if (this.questionsInCurrentTheme >= 5) {
+            this.questionsInCurrentTheme = 0;
+            // Theme will change automatically based on currentLevel in state
+        }
+    }
+
+    getCurrentThemeProgress() {
+        return this.questionsInCurrentTheme;
     }
 
     // Remove white/light background from images
@@ -283,7 +307,12 @@ export default class GameCanvas {
         if (lastObs && lastObs.y < 180) return;
 
         const lane = Math.floor(Math.random() * 3);
-        const type = Math.random() > 0.35 ? 'enemy' : 'item';
+        
+        // Ensure items spawn regularly so player can collect them
+        // If no item on screen, higher chance to spawn item
+        const hasItemOnScreen = this.obstacles.some(o => o.type === 'item' && !o.hit);
+        const itemChance = hasItemOnScreen ? 0.35 : 0.6;
+        const type = Math.random() < itemChance ? 'item' : 'enemy';
 
         this.obstacles.push({ type, lane, y: -70 });
     }
