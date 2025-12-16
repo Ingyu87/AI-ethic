@@ -7,13 +7,50 @@ export default class GameCanvas {
 
         // Theme settings (6 themes, 5 levels each = 30 levels)
         this.themes = [
-            { name: 'Forest', bg1: '#228B22', bg2: '#90EE90', road: '#8B4513' },
-            { name: 'Room', bg1: '#8B4513', bg2: '#DEB887', road: '#D2691E' },
-            { name: 'Library', bg1: '#4A4A4A', bg2: '#8B7355', road: '#654321' },
-            { name: 'Garden', bg1: '#32CD32', bg2: '#98FB98', road: '#C0C0C0' },
-            { name: 'City', bg1: '#2F4F4F', bg2: '#708090', road: '#404040' },
-            { name: 'Space', bg1: '#0a0a2e', bg2: '#1a1a4e', road: '#2a2a5e' }
+            { 
+                name: '숲', emoji: '🌲', 
+                bg1: '#1a472a', bg2: '#2d5a27', bg3: '#4a7c23',
+                road: '#8B4513', roadEdge: '#654321',
+                particles: ['🍃', '🌿', '🍂'], particleCount: 8
+            },
+            { 
+                name: '방', emoji: '🏠',
+                bg1: '#8B4513', bg2: '#A0522D', bg3: '#CD853F',
+                road: '#DEB887', roadEdge: '#D2691E',
+                particles: ['✨', '💫'], particleCount: 5
+            },
+            { 
+                name: '도서관', emoji: '📚',
+                bg1: '#2c1810', bg2: '#4a3728', bg3: '#6b5344',
+                road: '#8B7355', roadEdge: '#654321',
+                particles: ['📖', '✏️', '📝'], particleCount: 6
+            },
+            { 
+                name: '정원', emoji: '🌷',
+                bg1: '#228B22', bg2: '#32CD32', bg3: '#90EE90',
+                road: '#C0C0C0', roadEdge: '#A9A9A9',
+                particles: ['🌸', '🌺', '🦋', '🐝'], particleCount: 10
+            },
+            { 
+                name: '도시', emoji: '🏙️',
+                bg1: '#1a1a2e', bg2: '#16213e', bg3: '#0f3460',
+                road: '#333333', roadEdge: '#FFD700',
+                particles: ['🚗', '🚕', '💡'], particleCount: 6
+            },
+            { 
+                name: '우주', emoji: '🚀',
+                bg1: '#000011', bg2: '#0a0a2e', bg3: '#1a1a4e',
+                road: '#2a2a5e', roadEdge: '#4a4a8e',
+                particles: ['⭐', '✨', '🌟', '💫'], particleCount: 15
+            }
         ];
+
+        // Floating particles for theme atmosphere
+        this.particles = [];
+        this.currentThemeIdx = -1;
+        this.themeTransition = 0; // For smooth transition effect
+        this.showThemeBanner = false;
+        this.themeBannerTime = 0;
 
         // Load images
         this.images = {
@@ -158,6 +195,32 @@ export default class GameCanvas {
     }
 
     update(dt) {
+        // Check for theme change
+        const newThemeIdx = Math.floor(this.state.currentLevel / 5) % 6;
+        if (newThemeIdx !== this.currentThemeIdx) {
+            this.currentThemeIdx = newThemeIdx;
+            this.initParticles();
+            this.themeTransition = 1.0; // Start transition effect
+            this.showThemeBanner = true;
+            this.themeBannerTime = 2.5; // Show banner for 2.5 seconds
+        }
+
+        // Update theme transition
+        if (this.themeTransition > 0) {
+            this.themeTransition -= dt * 0.8;
+        }
+
+        // Update theme banner
+        if (this.themeBannerTime > 0) {
+            this.themeBannerTime -= dt;
+            if (this.themeBannerTime <= 0) {
+                this.showThemeBanner = false;
+            }
+        }
+
+        // Update particles
+        this.updateParticles(dt);
+
         if (this.state.phase === 'RUN') {
             this.bgScrollY += this.speed * dt;
 
@@ -177,6 +240,42 @@ export default class GameCanvas {
 
             if (this.bear.invincible > 0) this.bear.invincible -= dt;
         }
+    }
+
+    initParticles() {
+        const theme = this.themes[this.currentThemeIdx];
+        this.particles = [];
+        
+        for (let i = 0; i < (theme.particleCount || 5); i++) {
+            this.particles.push({
+                x: Math.random() * 800,
+                y: Math.random() * 600,
+                emoji: theme.particles[Math.floor(Math.random() * theme.particles.length)],
+                speed: 30 + Math.random() * 50,
+                sway: Math.random() * Math.PI * 2,
+                swaySpeed: 1 + Math.random() * 2,
+                size: 15 + Math.random() * 15
+            });
+        }
+    }
+
+    updateParticles(dt) {
+        const w = this.canvas.width || 800;
+        const h = this.canvas.height || 600;
+
+        this.particles.forEach(p => {
+            p.y += p.speed * dt;
+            p.sway += p.swaySpeed * dt;
+            p.x += Math.sin(p.sway) * 0.5;
+
+            // Reset particle when it goes off screen
+            if (p.y > h + 50) {
+                p.y = -50;
+                p.x = Math.random() * w;
+            }
+            if (p.x < -50) p.x = w + 50;
+            if (p.x > w + 50) p.x = -50;
+        });
     }
 
     spawnObstacle() {
@@ -215,7 +314,7 @@ export default class GameCanvas {
     }
 
     getLaneX(lane) {
-        const roadWidth = this.canvas.width * 0.8;
+        const roadWidth = this.canvas.width * 0.75;
         const roadX = (this.canvas.width - roadWidth) / 2;
         const laneWidth = roadWidth / 3;
         return roadX + (laneWidth * lane) + (laneWidth / 2);
@@ -239,22 +338,39 @@ export default class GameCanvas {
         // 1. Background
         this.drawBackground(ctx, w, h, theme);
 
-        // 2. Road
+        // 2. Floating particles (behind road)
+        this.drawParticles(ctx, w, h, 0.3);
+
+        // 3. Road
         this.drawRoad(ctx, w, h, theme);
 
-        // 3. Obstacles
+        // 4. Obstacles
         this.drawObstacles(ctx, theme);
 
-        // 4. Bear
+        // 5. Bear
         this.drawBear(ctx, w, h);
 
-        // 5. Damage flash
+        // 6. Floating particles (in front)
+        this.drawParticles(ctx, w, h, 0.7);
+
+        // 7. Damage flash
         if (this.bear.invincible > 0.8) {
             ctx.fillStyle = 'rgba(255,0,0,0.3)';
             ctx.fillRect(0, 0, w, h);
         }
 
-        // 6. Loading overlay
+        // 8. Theme transition flash
+        if (this.themeTransition > 0) {
+            ctx.fillStyle = `rgba(255,255,255,${this.themeTransition * 0.5})`;
+            ctx.fillRect(0, 0, w, h);
+        }
+
+        // 9. Theme banner
+        if (this.showThemeBanner && this.themeBannerTime > 0) {
+            this.drawThemeBanner(ctx, w, h, theme);
+        }
+
+        // 10. Loading overlay
         if (!this.assetsReady) {
             ctx.fillStyle = 'rgba(0,0,0,0.7)';
             ctx.fillRect(0, 0, w, h);
@@ -265,18 +381,108 @@ export default class GameCanvas {
         }
     }
 
+    drawParticles(ctx, w, h, alpha) {
+        ctx.globalAlpha = alpha;
+        this.particles.forEach(p => {
+            ctx.font = `${p.size}px serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(p.emoji, p.x, p.y);
+        });
+        ctx.globalAlpha = 1;
+    }
+
+    drawThemeBanner(ctx, w, h, theme) {
+        const progress = Math.min(1, (2.5 - this.themeBannerTime) / 0.3); // Fade in
+        const fadeOut = this.themeBannerTime < 0.5 ? this.themeBannerTime / 0.5 : 1; // Fade out
+        const alpha = progress * fadeOut;
+
+        // Banner background
+        ctx.fillStyle = `rgba(0,0,0,${0.7 * alpha})`;
+        ctx.fillRect(0, h * 0.35, w, h * 0.3);
+
+        // Theme emoji and name
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = '#fff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        ctx.font = '60px serif';
+        ctx.fillText(theme.emoji, w / 2, h * 0.43);
+        
+        ctx.font = 'bold 28px Arial';
+        ctx.fillText(`${theme.name} 스테이지`, w / 2, h * 0.55);
+        
+        ctx.font = '16px Arial';
+        ctx.fillStyle = '#aaa';
+        ctx.fillText(`Level ${this.state.currentLevel + 1} - ${this.state.currentLevel + 5}`, w / 2, h * 0.62);
+        
+        ctx.globalAlpha = 1;
+    }
+
     drawBackground(ctx, w, h, theme) {
+        // Multi-color gradient background
         const gradient = ctx.createLinearGradient(0, 0, 0, h);
         gradient.addColorStop(0, theme.bg1);
-        gradient.addColorStop(0.5, theme.bg2);
+        gradient.addColorStop(0.4, theme.bg2);
+        gradient.addColorStop(0.7, theme.bg3 || theme.bg2);
         gradient.addColorStop(1, theme.bg1);
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, w, h);
 
-        // Decorative scrolling lines
-        ctx.strokeStyle = 'rgba(255,255,255,0.08)';
-        ctx.lineWidth = 2;
-        const lineSpacing = 60;
+        // Theme-specific decorations
+        const themeIdx = theme.index;
+        
+        if (themeIdx === 5) {
+            // Space: Stars
+            ctx.fillStyle = '#fff';
+            for (let i = 0; i < 50; i++) {
+                const x = (i * 137 + this.bgScrollY * 0.1) % w;
+                const y = (i * 89 + this.bgScrollY * 0.05) % h;
+                const size = (i % 3) + 1;
+                ctx.beginPath();
+                ctx.arc(x, y, size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        } else if (themeIdx === 4) {
+            // City: Building silhouettes
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            for (let i = 0; i < 8; i++) {
+                const x = (i * 120) % w - 20;
+                const bh = 100 + (i % 3) * 80;
+                ctx.fillRect(x, h - bh, 60, bh);
+                // Windows
+                ctx.fillStyle = 'rgba(255,200,50,0.5)';
+                for (let wy = h - bh + 20; wy < h - 20; wy += 30) {
+                    for (let wx = x + 10; wx < x + 50; wx += 20) {
+                        if (Math.random() > 0.3) {
+                            ctx.fillRect(wx, wy, 8, 12);
+                        }
+                    }
+                }
+                ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            }
+        } else if (themeIdx === 0) {
+            // Forest: Trees in background
+            ctx.fillStyle = 'rgba(0,50,0,0.3)';
+            for (let i = 0; i < 6; i++) {
+                const x = (i * 150 + 50) % w;
+                // Tree trunk
+                ctx.fillRect(x - 8, h - 150, 16, 100);
+                // Tree top
+                ctx.beginPath();
+                ctx.moveTo(x, h - 200);
+                ctx.lineTo(x - 40, h - 100);
+                ctx.lineTo(x + 40, h - 100);
+                ctx.closePath();
+                ctx.fill();
+            }
+        }
+
+        // Scrolling ground lines
+        ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+        ctx.lineWidth = 1;
+        const lineSpacing = 50;
         const offset = this.bgScrollY % lineSpacing;
         for (let y = offset - lineSpacing; y < h + lineSpacing; y += lineSpacing) {
             ctx.beginPath();
@@ -287,20 +493,29 @@ export default class GameCanvas {
     }
 
     drawRoad(ctx, w, h, theme) {
-        const roadWidth = w * 0.8;
+        const roadWidth = w * 0.75;
         const roadX = (w - roadWidth) / 2;
         
-        // Road surface
-        ctx.fillStyle = theme.road;
+        // Road shadow/depth
+        ctx.fillStyle = 'rgba(0,0,0,0.2)';
+        ctx.fillRect(roadX - 5, 0, roadWidth + 10, h);
+
+        // Road surface with gradient
+        const roadGradient = ctx.createLinearGradient(roadX, 0, roadX + roadWidth, 0);
+        roadGradient.addColorStop(0, 'rgba(0,0,0,0.2)');
+        roadGradient.addColorStop(0.1, theme.road);
+        roadGradient.addColorStop(0.9, theme.road);
+        roadGradient.addColorStop(1, 'rgba(0,0,0,0.2)');
+        ctx.fillStyle = roadGradient;
         ctx.fillRect(roadX, 0, roadWidth, h);
 
         // Lane dividers (animated dashes)
-        ctx.strokeStyle = 'rgba(255,255,255,0.6)';
-        ctx.lineWidth = 3;
-        ctx.setLineDash([25, 18]);
+        ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+        ctx.lineWidth = 4;
+        ctx.setLineDash([30, 20]);
         
         const laneWidth = roadWidth / 3;
-        const dashOffset = this.bgScrollY % 43;
+        const dashOffset = this.bgScrollY % 50;
         ctx.lineDashOffset = -dashOffset;
 
         for (let i = 1; i < 3; i++) {
@@ -312,15 +527,18 @@ export default class GameCanvas {
         }
         ctx.setLineDash([]);
 
-        // Road edges
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 4;
+        // Road edges with glow
+        ctx.shadowColor = theme.roadEdge || '#fff';
+        ctx.shadowBlur = 10;
+        ctx.strokeStyle = theme.roadEdge || '#fff';
+        ctx.lineWidth = 5;
         ctx.beginPath();
         ctx.moveTo(roadX, 0);
         ctx.lineTo(roadX, h);
         ctx.moveTo(roadX + roadWidth, 0);
         ctx.lineTo(roadX + roadWidth, h);
         ctx.stroke();
+        ctx.shadowBlur = 0;
     }
 
     drawBear(ctx, w, h) {
@@ -332,67 +550,116 @@ export default class GameCanvas {
             return;
         }
 
-        const img = this.processedImages.bear || this.images.bear;
-        if (img && (img.width || img.naturalWidth)) {
-            // Image: 2 cols x 2 rows, use top row for animation
-            const imgWidth = img.width || img.naturalWidth;
-            const imgHeight = img.height || img.naturalHeight;
-            const frameW = imgWidth / 2;
-            const frameH = imgHeight / 2;
-            const frame = this.bear.runFrame % 2;
-            
-            const size = 90;
-            ctx.drawImage(
-                img,
-                frame * frameW, 0, frameW, frameH,
-                bearX - size/2, bearY - size/2, size, size
-            );
-        } else {
-            // Fallback: draw bear with canvas
-            this.drawBearFallback(ctx, bearX, bearY);
-        }
+        // Always use canvas-drawn bear (no image text issue)
+        this.drawBearCanvas(ctx, bearX, bearY);
     }
 
-    drawBearFallback(ctx, bearX, bearY) {
+    drawBearCanvas(ctx, bearX, bearY) {
         ctx.save();
         ctx.translate(bearX, bearY);
 
-        // Body
+        const bounce = Math.sin(Date.now() / 100) * 2; // Subtle bounce
+        const runOffset = this.bear.runFrame === 0 ? 3 : -3;
+
+        // Shadow
+        ctx.fillStyle = 'rgba(0,0,0,0.2)';
+        ctx.beginPath();
+        ctx.ellipse(0, 35, 25, 8, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Left leg
         ctx.fillStyle = '#8B4513';
         ctx.beginPath();
-        ctx.ellipse(0, 0, 25, 30, 0, 0, Math.PI * 2);
+        ctx.ellipse(-10, 25 + runOffset, 10, 15, 0, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Right leg
+        ctx.beginPath();
+        ctx.ellipse(10, 25 - runOffset, 10, 15, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Body
+        ctx.fillStyle = '#A0522D';
+        ctx.beginPath();
+        ctx.ellipse(0, bounce, 28, 32, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Belly
+        ctx.fillStyle = '#DEB887';
+        ctx.beginPath();
+        ctx.ellipse(0, 5 + bounce, 18, 20, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Left arm
+        ctx.fillStyle = '#8B4513';
+        ctx.beginPath();
+        ctx.ellipse(-30, -5 + bounce + runOffset, 10, 18, -0.3, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Right arm
+        ctx.beginPath();
+        ctx.ellipse(30, -5 + bounce - runOffset, 10, 18, 0.3, 0, Math.PI * 2);
         ctx.fill();
 
         // Head
         ctx.fillStyle = '#A0522D';
         ctx.beginPath();
-        ctx.arc(0, -35, 22, 0, Math.PI * 2);
+        ctx.arc(0, -35 + bounce, 25, 0, Math.PI * 2);
         ctx.fill();
 
         // Ears
         ctx.fillStyle = '#8B4513';
         ctx.beginPath();
-        ctx.arc(-15, -50, 8, 0, Math.PI * 2);
-        ctx.arc(15, -50, 8, 0, Math.PI * 2);
+        ctx.arc(-18, -52 + bounce, 10, 0, Math.PI * 2);
+        ctx.arc(18, -52 + bounce, 10, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Inner ears
+        ctx.fillStyle = '#DEB887';
+        ctx.beginPath();
+        ctx.arc(-18, -52 + bounce, 5, 0, Math.PI * 2);
+        ctx.arc(18, -52 + bounce, 5, 0, Math.PI * 2);
         ctx.fill();
 
         // Snout
         ctx.fillStyle = '#DEB887';
         ctx.beginPath();
-        ctx.ellipse(0, -30, 10, 7, 0, 0, Math.PI * 2);
+        ctx.ellipse(0, -28 + bounce, 12, 9, 0, 0, Math.PI * 2);
         ctx.fill();
 
         // Nose
         ctx.fillStyle = '#333';
         ctx.beginPath();
-        ctx.ellipse(0, -33, 4, 3, 0, 0, Math.PI * 2);
+        ctx.ellipse(0, -32 + bounce, 5, 4, 0, 0, Math.PI * 2);
         ctx.fill();
 
         // Eyes
+        ctx.fillStyle = '#333';
         ctx.beginPath();
-        ctx.arc(-8, -40, 3, 0, Math.PI * 2);
-        ctx.arc(8, -40, 3, 0, Math.PI * 2);
+        ctx.arc(-9, -42 + bounce, 4, 0, Math.PI * 2);
+        ctx.arc(9, -42 + bounce, 4, 0, Math.PI * 2);
         ctx.fill();
+
+        // Eye shine
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(-10, -43 + bounce, 1.5, 0, Math.PI * 2);
+        ctx.arc(8, -43 + bounce, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Cute blush
+        ctx.fillStyle = 'rgba(255,150,150,0.5)';
+        ctx.beginPath();
+        ctx.ellipse(-15, -35 + bounce, 5, 3, 0, 0, Math.PI * 2);
+        ctx.ellipse(15, -35 + bounce, 5, 3, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Smile
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(0, -28 + bounce, 6, 0.1 * Math.PI, 0.9 * Math.PI);
+        ctx.stroke();
 
         ctx.restore();
     }
