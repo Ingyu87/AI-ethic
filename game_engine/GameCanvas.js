@@ -17,10 +17,13 @@ export default class GameCanvas {
 
         // Load images
         this.images = {
-            forestItems: new Image(),    // game_items.png (bee, honey)
-            themeItems: new Image(),     // theme_enemies_items.png
-            bear: new Image()            // bear_back.png
+            forestItems: new Image(),
+            themeItems: new Image(),
+            bear: new Image()
         };
+        
+        // Processed images (with transparent background)
+        this.processedImages = {};
         
         this.images.forestItems.src = 'assets/game_items.png';
         this.images.themeItems.src = 'assets/theme_enemies_items.png';
@@ -30,8 +33,10 @@ export default class GameCanvas {
         this.totalImages = 3;
         this.assetsReady = false;
 
-        Object.values(this.images).forEach(img => {
+        Object.entries(this.images).forEach(([key, img]) => {
             img.onload = () => {
+                // Remove white background
+                this.processedImages[key] = this.removeWhiteBackground(img);
                 this.imagesLoaded++;
                 if (this.imagesLoaded >= this.totalImages) {
                     this.assetsReady = true;
@@ -59,6 +64,37 @@ export default class GameCanvas {
         this.bgScrollY = 0;
 
         this.initInput();
+    }
+
+    // Remove white/light background from images
+    removeWhiteBackground(img) {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        
+        ctx.drawImage(img, 0, 0);
+        
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imageData.data;
+        
+        for (let i = 0; i < data.length; i += 4) {
+            const r = data[i];
+            const g = data[i + 1];
+            const b = data[i + 2];
+            
+            // If pixel is white or near-white, make it transparent
+            if (r > 240 && g > 240 && b > 240) {
+                data[i + 3] = 0; // Set alpha to 0
+            }
+            // Also handle light gray backgrounds
+            else if (r > 230 && g > 230 && b > 230) {
+                data[i + 3] = 0;
+            }
+        }
+        
+        ctx.putImageData(imageData, 0, 0);
+        return canvas;
     }
 
     initInput() {
@@ -296,11 +332,13 @@ export default class GameCanvas {
             return;
         }
 
-        const img = this.images.bear;
-        if (img && img.complete && img.naturalWidth > 0) {
+        const img = this.processedImages.bear || this.images.bear;
+        if (img && (img.width || img.naturalWidth)) {
             // Image: 2 cols x 2 rows, use top row for animation
-            const frameW = img.width / 2;
-            const frameH = img.height / 2;
+            const imgWidth = img.width || img.naturalWidth;
+            const imgHeight = img.height || img.naturalHeight;
+            const frameW = imgWidth / 2;
+            const frameH = imgHeight / 2;
             const frame = this.bear.runFrame % 2;
             
             const size = 90;
@@ -379,10 +417,12 @@ export default class GameCanvas {
             if (themeIdx === 0) {
                 // Forest theme: use game_items.png (2x2 grid)
                 // Row 0: bee (enemy), honey (item)
-                const img = this.images.forestItems;
-                if (img && img.complete && img.naturalWidth > 0) {
-                    const fw = img.width / 2;
-                    const fh = img.height / 2;
+                const img = this.processedImages.forestItems || this.images.forestItems;
+                if (img && (img.width || img.naturalWidth)) {
+                    const imgW = img.width || img.naturalWidth;
+                    const imgH = img.height || img.naturalHeight;
+                    const fw = imgW / 2;
+                    const fh = imgH / 2;
                     const col = obs.type === 'enemy' ? 0 : 1;
                     ctx.drawImage(img, col * fw, 0, fw, fh, x - size/2, obs.y - size/2, size, size);
                     drawn = true;
@@ -390,10 +430,12 @@ export default class GameCanvas {
             } else {
                 // Other themes: use theme_enemies_items.png (3 cols x 5 rows)
                 // Col 0: text label, Col 1: enemy, Col 2: item
-                const img = this.images.themeItems;
-                if (img && img.complete && img.naturalWidth > 0) {
-                    const fw = img.width / 3;
-                    const fh = img.height / 5;
+                const img = this.processedImages.themeItems || this.images.themeItems;
+                if (img && (img.width || img.naturalWidth)) {
+                    const imgW = img.width || img.naturalWidth;
+                    const imgH = img.height || img.naturalHeight;
+                    const fw = imgW / 3;
+                    const fh = imgH / 5;
                     const row = themeIdx - 1; // themes 1-5 map to rows 0-4
                     const col = obs.type === 'enemy' ? 1 : 2;
                     
