@@ -1,82 +1,34 @@
-import Sprite from './Sprite.js';
-
 export default class GameCanvas {
     constructor(canvas, gameState, onEvent) {
         this.canvas = canvas;
-        this.ctx = canvas.getContext('2d', { willReadFrequently: true });
+        this.ctx = canvas.getContext('2d');
         this.state = gameState;
         this.onEvent = onEvent;
 
-        // 1. Asset Loading
-        this.assets = {
-            bear: new Image(),
-            bg: new Image(),
-            items: new Image(), // Theme items (Room, Library, Garden, City, Space)
-            items_base: new Image() // Forest items (Bee, Honey)
-        };
-        this.sprites = {};
+        // Theme colors and settings
+        this.themes = [
+            { name: 'Forest', bg1: '#228B22', bg2: '#90EE90', road: '#8B4513', enemy: '🐝', item: '🍯' },
+            { name: 'Room', bg1: '#8B4513', bg2: '#DEB887', road: '#D2691E', enemy: '🐭', item: '🧀' },
+            { name: 'Library', bg1: '#4A4A4A', bg2: '#8B7355', road: '#654321', enemy: '📚', item: '📖' },
+            { name: 'Garden', bg1: '#32CD32', bg2: '#98FB98', road: '#C0C0C0', enemy: '🐛', item: '🌸' },
+            { name: 'City', bg1: '#2F4F4F', bg2: '#708090', road: '#404040', enemy: '🚗', item: '⭐' },
+            { name: 'Space', bg1: '#0a0a2e', bg2: '#1a1a4e', road: '#2a2a5e', enemy: '☄️', item: '🚀' }
+        ];
 
-        this.assets.bear.src = 'assets/bear_back.png'; // New Back View
-        this.assets.bg.src = 'assets/bg_vertical.png'; // New Vertical BGs
-        this.assets.items.src = 'assets/theme_enemies_items.png'; // Theme enemies/items
-        this.assets.items_base.src = 'assets/game_items.png'; // Forest Bee/Honey
-
-        this.totalAssets = 4;
-        this.loadedAssets = 0;
-        this.assetsReady = false;
-
-        Object.values(this.assets).forEach(img => {
-            img.onload = () => {
-                this.loadedAssets++;
-                this.processImageTransparency(img);
-                if (this.loadedAssets >= this.totalAssets) {
-                    this.assetsReady = true;
-                }
-            };
-            img.onerror = () => {
-                console.warn('Image load failed:', img.src);
-                this.loadedAssets++;
-                if (this.loadedAssets >= this.totalAssets) {
-                    this.assetsReady = true;
-                }
-            };
-        });
-
-        // 2. Game Entities
+        // Game Entities
         this.bear = {
-            lane: 1, // 0 (Left), 1 (Center), 2 (Right)
-            x: 0, // Calculated based on lane
-            y: 0, // Fixed near bottom
-            sprite: null,
-            invincible: 0
+            lane: 1,
+            invincible: 0,
+            runFrame: 0,
+            frameTime: 0
         };
 
         this.obstacles = [];
-        this.laneWidth = 0; // Calculated on resize
-        this.speed = 300; // Pixels per second (Vertical speed)
-        this.bgScrollY = 0; // Vertical Scroll
-        this.spritesApplied = false; // Flag for one-time sprite application
+        this.speed = 300;
+        this.bgScrollY = 0;
+        this.assetsReady = true; // No external assets needed
 
         this.initInput();
-    }
-
-    processImageTransparency(img) {
-        const c = document.createElement('canvas');
-        c.width = img.width;
-        c.height = img.height;
-        const ctx = c.getContext('2d');
-        ctx.drawImage(img, 0, 0);
-        const imageData = ctx.getImageData(0, 0, c.width, c.height);
-        const data = imageData.data;
-        for (let i = 0; i < data.length; i += 4) {
-            if (data[i] > 230 && data[i + 1] > 230 && data[i + 2] > 230) data[i + 3] = 0;
-        }
-        ctx.putImageData(imageData, 0, 0);
-
-        if (img === this.assets.bear) this.sprites.bear = c;
-        if (img === this.assets.items) this.sprites.items = c;
-        if (img === this.assets.items_base) this.sprites.items_base = c;
-        // Keep BG raw
     }
 
     initInput() {
@@ -94,7 +46,6 @@ export default class GameCanvas {
             const clickX = e.clientX - rect.left;
             const canvasWidth = this.canvas.width;
 
-            // Click on left third = move left, right third = move right
             if (clickX < canvasWidth / 3) {
                 this.moveBear(-1);
             } else if (clickX > canvasWidth * 2 / 3) {
@@ -112,8 +63,7 @@ export default class GameCanvas {
             if (this.state.phase !== 'RUN') return;
             const touchEndX = e.changedTouches[0].clientX;
             const diff = touchEndX - touchStartX;
-
-            if (Math.abs(diff) > 30) { // Minimum swipe distance
+            if (Math.abs(diff) > 30) {
                 this.moveBear(diff > 0 ? 1 : -1);
             }
         }, { passive: true });
@@ -128,59 +78,13 @@ export default class GameCanvas {
 
     start() {
         this.lastTime = Date.now();
-        this.bearSpriteInitialized = false;
         requestAnimationFrame(() => this.loop());
-    }
-
-    initBearSprite() {
-        // Bear Sprite: 3 frames in 2x2 grid (2 on top row, 1 on bottom row)
-        const bearImg = this.assets.bear;
-        if (!bearImg || bearImg.width === 0) return false;
-
-        const bearW = bearImg.width / 2;  // 2 columns
-        const bearH = bearImg.height / 2; // 2 rows
-
-        this.bear.sprite = new Sprite(bearImg, bearW, bearH, {
-            'run': { row: 0, frames: 2 }, // Use 2 frames from top row for smooth animation
-            'idle': { row: 0, frames: 1 }
-        }, 6);
-
-        return true;
     }
 
     loop() {
         const now = Date.now();
         const dt = (now - this.lastTime) / 1000;
         this.lastTime = now;
-
-        if (!this.assetsReady) {
-            this.ctx.fillStyle = '#000';
-            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-            this.ctx.fillStyle = '#fff';
-            this.ctx.font = '20px Arial';
-            this.ctx.fillText(`로딩 중... ${this.loadedAssets}/${this.totalAssets}`, 50, 50);
-            requestAnimationFrame(() => this.loop());
-            return;
-        }
-
-        // Initialize bear sprite once assets are ready
-        if (!this.bearSpriteInitialized) {
-            if (this.initBearSprite()) {
-                this.bearSpriteInitialized = true;
-            } else {
-                // Assets not fully ready yet, wait
-                requestAnimationFrame(() => this.loop());
-                return;
-            }
-        }
-
-        // Apply processed sprites once (only first time after assets ready)
-        if (!this.spritesApplied) {
-            if (this.sprites.bear && this.bear.sprite) {
-                this.bear.sprite.image = this.sprites.bear;
-            }
-            this.spritesApplied = true;
-        }
 
         this.update(dt);
         this.draw();
@@ -191,32 +95,32 @@ export default class GameCanvas {
     }
 
     update(dt) {
-        if (!this.bear.sprite) return; // Safety check
-
         if (this.state.phase === 'RUN') {
-            this.bgScrollY += this.speed * dt; // Scroll Down (Y increases)
+            this.bgScrollY += this.speed * dt;
 
-            // Spawn
+            // Spawn obstacles
             if (Math.random() < 0.02) this.spawnObstacle();
 
-            // Move Obstacles (Downwards)
+            // Move Obstacles
             this.obstacles.forEach(obs => obs.y += this.speed * dt);
             this.obstacles = this.obstacles.filter(obs => obs.y < this.canvas.height + 100);
 
             this.checkCollisions();
 
-            this.bear.sprite.setAnimation('run');
-            this.bear.sprite.update(dt);
+            // Bear animation
+            this.bear.frameTime += dt;
+            if (this.bear.frameTime > 0.15) {
+                this.bear.frameTime = 0;
+                this.bear.runFrame = (this.bear.runFrame + 1) % 2;
+            }
+
             if (this.bear.invincible > 0) this.bear.invincible -= dt;
-        } else {
-            this.bear.sprite.setAnimation('idle');
         }
     }
 
     spawnObstacle() {
-        // Min distance check
         const lastObs = this.obstacles[this.obstacles.length - 1];
-        if (lastObs && lastObs.y < 200) return; // If last one is still at top, wait
+        if (lastObs && lastObs.y < 200) return;
 
         const lane = Math.floor(Math.random() * 3);
         const type = Math.random() > 0.4 ? 'enemy' : 'item';
@@ -224,13 +128,11 @@ export default class GameCanvas {
         this.obstacles.push({
             type,
             lane,
-            y: -100, // Start above screen
-            width: 60, height: 60
+            y: -60
         });
     }
 
     checkCollisions() {
-        // Bear is at bottom
         const bearX = this.getLaneX(this.bear.lane);
         const bearY = this.canvas.height * 0.8;
 
@@ -240,9 +142,7 @@ export default class GameCanvas {
             const obsX = this.getLaneX(obs.lane);
             const dist = Math.sqrt((bearX - obsX) ** 2 + (bearY - obs.y) ** 2);
 
-            // Distance check (Vertical is easier, X is locked to lane)
-            // But let's keep radius check for smoothness
-            if (dist < 60) {
+            if (dist < 50) {
                 obs.hit = true;
                 if (obs.type === 'item') {
                     this.state.phase = 'QUIZ_TRANSITION';
@@ -253,26 +153,19 @@ export default class GameCanvas {
                         this.bear.invincible = 1.0;
                     }
                 }
-                obs.y = 9999; // Move away
+                obs.y = 9999;
             }
         });
     }
 
     getLaneX(lane) {
-        // Divide screen into 3 cols
         const colWidth = this.canvas.width / 3;
         return (colWidth * lane) + (colWidth / 2);
     }
 
-    getThemeAssets() {
-        // 6 Themes
-        const themeIdx = Math.floor(this.state.currentLevel / 5);
-        // bg_vertical has 6 columns stacked horizontally
-        const bgImg = this.assets.bg;
-        const colW = bgImg && bgImg.width ? bgImg.width / 6 : 0;
-        const sourceX = (themeIdx % 6) * colW;
-
-        return { bgImg, sourceX, colW, themeIdx };
+    getTheme() {
+        const themeIdx = Math.floor(this.state.currentLevel / 5) % 6;
+        return this.themes[themeIdx];
     }
 
     draw() {
@@ -283,92 +176,193 @@ export default class GameCanvas {
         const w = this.canvas.width;
         const h = this.canvas.height;
         const ctx = this.ctx;
+        const theme = this.getTheme();
 
-        // 1. BG (Vertical Scroll)
-        const { bgImg, sourceX, colW, themeIdx } = this.getThemeAssets();
+        // 1. Background with scrolling effect
+        this.drawBackground(ctx, w, h, theme);
 
-        // Safety check for background image
-        if (!bgImg || !bgImg.width || !bgImg.height) {
-            // Draw fallback gradient background
-            const gradient = ctx.createLinearGradient(0, 0, 0, h);
-            gradient.addColorStop(0, '#87CEEB');
-            gradient.addColorStop(1, '#228B22');
-            ctx.fillStyle = gradient;
-            ctx.fillRect(0, 0, w, h);
-        } else {
-            const scrollY = this.bgScrollY % h;
+        // 2. Road/Lanes
+        this.drawRoad(ctx, w, h, theme);
 
-            // Draw 1 (Top part moving down)
-            ctx.drawImage(bgImg,
-                sourceX, 0, colW, bgImg.height,
-                0, scrollY - h, w, h
-            );
-            // Draw 2 (Bottom part coming in)
-            ctx.drawImage(bgImg,
-                sourceX, 0, colW, bgImg.height,
-                0, scrollY, w, h
-            );
-        }
+        // 3. Obstacles (enemies & items)
+        this.drawObstacles(ctx, theme);
 
-        // 2. Lanes (Guides)
-        ctx.strokeStyle = 'rgba(255,255,255,0.2)';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        for (let i = 1; i < 3; i++) {
-            const x = (w / 3) * i;
-            ctx.moveTo(x, 0); ctx.lineTo(x, h);
-        }
-        ctx.stroke();
+        // 4. Bear
+        this.drawBear(ctx, w, h);
 
-        // 3. Bear
-        const bearX = this.getLaneX(this.bear.lane);
-        const bearY = h * 0.8;
-
-        if (this.bear.sprite && (this.bear.invincible <= 0 || Math.floor(Date.now() / 100) % 2 === 0)) {
-            this.bear.sprite.draw(ctx, bearX - 50, bearY - 50, { scale: 0.5 });
-        }
-
-        // 4. Obstacles
-        this.obstacles.forEach(obs => {
-            const x = this.getLaneX(obs.lane);
-            const size = 80;
-            const half = size / 2;
-
-            let drawSrc, sCol, sRow, fw, fh;
-
-            if (themeIdx === 0) {
-                // Forest Theme: Use items_base (game_items.png) - Bee/Honey
-                drawSrc = this.sprites.items_base || this.assets.items_base;
-                // game_items.png structure: assume 3 cols, enemy in col 0-1, item in col 2
-                fw = drawSrc.width / 3;
-                fh = drawSrc.height;
-                sRow = 0;
-                sCol = obs.type === 'enemy' ? 0 : 2; // Bee=0, Honey=2
-            } else {
-                // Other Themes: Use theme_enemies_items.png
-                // 5 rows (Room=0, Library=1, Garden=2, City=3, Space=4)
-                // 3 cols (col 0=?, col 1=enemy, col 2=item)
-                drawSrc = this.sprites.items || this.assets.items;
-                fw = drawSrc.width / 3;
-                fh = drawSrc.height / 5;
-                sRow = Math.min(themeIdx - 1, 4); // Map theme 1-5 to rows 0-4
-                sCol = obs.type === 'enemy' ? 1 : 2;
-            }
-
-            // Safety check and draw
-            if (drawSrc && drawSrc.width > 0 && drawSrc.height > 0) {
-                ctx.drawImage(
-                    drawSrc,
-                    sCol * fw, sRow * fh, fw, fh,
-                    x - half, obs.y - half, size, size
-                );
-            }
-        });
-
-        // 5. Flash
+        // 5. Damage flash
         if (this.bear.invincible > 0.8) {
             ctx.fillStyle = 'rgba(255,0,0,0.3)';
             ctx.fillRect(0, 0, w, h);
         }
+    }
+
+    drawBackground(ctx, w, h, theme) {
+        // Scrolling gradient background
+        const scrollOffset = (this.bgScrollY % 100) / 100;
+        
+        const gradient = ctx.createLinearGradient(0, 0, 0, h);
+        gradient.addColorStop(0, theme.bg1);
+        gradient.addColorStop(0.5, theme.bg2);
+        gradient.addColorStop(1, theme.bg1);
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, w, h);
+
+        // Scrolling decoration lines
+        ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+        ctx.lineWidth = 2;
+        const lineSpacing = 80;
+        const offset = (this.bgScrollY % lineSpacing);
+        for (let y = offset - lineSpacing; y < h + lineSpacing; y += lineSpacing) {
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(w, y);
+            ctx.stroke();
+        }
+    }
+
+    drawRoad(ctx, w, h, theme) {
+        // Center road
+        const roadWidth = w * 0.8;
+        const roadX = (w - roadWidth) / 2;
+        
+        ctx.fillStyle = theme.road;
+        ctx.fillRect(roadX, 0, roadWidth, h);
+
+        // Lane dividers (dashed lines)
+        ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+        ctx.lineWidth = 3;
+        ctx.setLineDash([30, 20]);
+        
+        const laneWidth = roadWidth / 3;
+        for (let i = 1; i < 3; i++) {
+            const x = roadX + laneWidth * i;
+            const dashOffset = (this.bgScrollY % 50);
+            ctx.lineDashOffset = -dashOffset;
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, h);
+            ctx.stroke();
+        }
+        ctx.setLineDash([]);
+
+        // Road edges
+        ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(roadX, 0);
+        ctx.lineTo(roadX, h);
+        ctx.moveTo(roadX + roadWidth, 0);
+        ctx.lineTo(roadX + roadWidth, h);
+        ctx.stroke();
+    }
+
+    drawBear(ctx, w, h) {
+        const bearX = this.getLaneX(this.bear.lane);
+        const bearY = h * 0.8;
+
+        // Blink when invincible
+        if (this.bear.invincible > 0 && Math.floor(Date.now() / 100) % 2 === 0) {
+            return;
+        }
+
+        ctx.save();
+        ctx.translate(bearX, bearY);
+
+        // Body
+        ctx.fillStyle = '#8B4513';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 30, 35, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Head
+        ctx.fillStyle = '#A0522D';
+        ctx.beginPath();
+        ctx.arc(0, -40, 25, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Ears
+        ctx.fillStyle = '#8B4513';
+        ctx.beginPath();
+        ctx.arc(-18, -55, 10, 0, Math.PI * 2);
+        ctx.arc(18, -55, 10, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Inner ears
+        ctx.fillStyle = '#DEB887';
+        ctx.beginPath();
+        ctx.arc(-18, -55, 5, 0, Math.PI * 2);
+        ctx.arc(18, -55, 5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Snout
+        ctx.fillStyle = '#DEB887';
+        ctx.beginPath();
+        ctx.ellipse(0, -35, 12, 8, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Nose
+        ctx.fillStyle = '#333';
+        ctx.beginPath();
+        ctx.ellipse(0, -38, 5, 4, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Eyes
+        ctx.fillStyle = '#333';
+        ctx.beginPath();
+        ctx.arc(-10, -45, 4, 0, Math.PI * 2);
+        ctx.arc(10, -45, 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Eye shine
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(-11, -46, 1.5, 0, Math.PI * 2);
+        ctx.arc(9, -46, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Running legs animation
+        const legOffset = this.bear.runFrame === 0 ? 5 : -5;
+        ctx.fillStyle = '#8B4513';
+        
+        // Left leg
+        ctx.beginPath();
+        ctx.ellipse(-12, 30 + legOffset, 10, 15, 0, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Right leg
+        ctx.beginPath();
+        ctx.ellipse(12, 30 - legOffset, 10, 15, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Arms
+        ctx.beginPath();
+        ctx.ellipse(-28, -5 + legOffset, 8, 18, -0.3, 0, Math.PI * 2);
+        ctx.ellipse(28, -5 - legOffset, 8, 18, 0.3, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+    }
+
+    drawObstacles(ctx, theme) {
+        ctx.font = '50px serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        this.obstacles.forEach(obs => {
+            if (obs.hit) return;
+            
+            const x = this.getLaneX(obs.lane);
+            const emoji = obs.type === 'enemy' ? theme.enemy : theme.item;
+            
+            // Shadow
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.beginPath();
+            ctx.ellipse(x, obs.y + 25, 20, 8, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Emoji
+            ctx.fillText(emoji, x, obs.y);
+        });
     }
 }
