@@ -228,13 +228,15 @@ function startQuiz() {
 
     // Reset keyboard navigation
     selectedOptionIndex = 0;
-    currentQuestionOptions = currentQuestion.options;
+    
+    // Shuffle options randomly so correct answer isn't always in same position
+    currentQuestionOptions = shuffleArray([...currentQuestion.options]);
 
     ui.quiz.category.textContent = currentQuestion.category;
     ui.quiz.question.textContent = currentQuestion.question;
     ui.quiz.options.innerHTML = '';
 
-    currentQuestion.options.forEach((opt, index) => {
+    currentQuestionOptions.forEach((opt, index) => {
         const btn = document.createElement('div');
         btn.className = 'quiz-option' + (index === 0 ? ' selected' : '');
         btn.innerHTML = `<span class="option-number">${index + 1}</span> ${opt.text}`;
@@ -250,6 +252,15 @@ function startQuiz() {
     });
 
     showScreen('quiz');
+}
+
+// Fisher-Yates shuffle algorithm
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
 }
 
 function handleAnswer(selectedOption, question) {
