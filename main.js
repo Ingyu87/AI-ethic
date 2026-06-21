@@ -82,6 +82,21 @@ function init() {
     ui.btns.download.addEventListener('click', downloadReport);
     ui.btns.restart.addEventListener('click', () => location.reload());
 
+    // Footer & Modal Event Listeners
+    const linkTerms = document.getElementById('link-terms');
+    const linkPrivacy = document.getElementById('link-privacy');
+    const modalCloseBtn = document.getElementById('modal-close-btn');
+    const modalOverlay = document.getElementById('modal-overlay');
+
+    if (linkTerms) linkTerms.addEventListener('click', () => openModal('terms'));
+    if (linkPrivacy) linkPrivacy.addEventListener('click', () => openModal('privacy'));
+    if (modalCloseBtn) modalCloseBtn.addEventListener('click', closeModal);
+    if (modalOverlay) {
+        modalOverlay.addEventListener('click', (e) => {
+            if (e.target === modalOverlay) closeModal();
+        });
+    }
+
     // Setup Lives UI with Hearts
     ui.displays.lives.innerHTML = '';
 
@@ -101,6 +116,16 @@ function init() {
 }
 
 function handleGlobalKeyboard(e) {
+    // Modal open check - close with Esc/Space/Enter and block other inputs
+    const overlay = document.getElementById('modal-overlay');
+    if (overlay && !overlay.classList.contains('hidden')) {
+        if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            closeModal();
+        }
+        return;
+    }
+
     // Quiz screen keyboard navigation
     if (state.phase === 'QUIZ' && !ui.screens.quiz.classList.contains('hidden')) {
         if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
@@ -340,6 +365,91 @@ function showScreen(name) {
         ui.screens[name].classList.remove('hidden');
         ui.screens[name].classList.add('show');
     }
+}
+
+async function openModal(docType) {
+    const titleEl = document.getElementById('modal-title');
+    const bodyEl = document.getElementById('modal-body');
+    const overlay = document.getElementById('modal-overlay');
+    
+    if (!titleEl || !bodyEl || !overlay) return;
+    
+    titleEl.textContent = docType === 'terms' ? '서비스 이용약관' : '개인정보처리방침';
+    bodyEl.innerHTML = '<p style="text-align:center; padding: 20px;">로딩 중...</p>';
+    overlay.classList.remove('hidden');
+    
+    const fileName = docType === 'terms' ? '이용약관.md' : '개인정보처리방침.md';
+    try {
+        const response = await fetch(fileName);
+        if (!response.ok) throw new Error('파일을 불러오는데 실패했습니다.');
+        const markdown = await response.text();
+        bodyEl.innerHTML = parseMarkdownToHtml(markdown);
+    } catch (e) {
+        bodyEl.innerHTML = `<p style="color:red; text-align:center; padding: 20px;">에러: ${e.message}</p>`;
+    }
+}
+
+function closeModal() {
+    const overlay = document.getElementById('modal-overlay');
+    if (overlay) {
+        overlay.classList.add('hidden');
+    }
+}
+
+function parseMarkdownToHtml(markdown) {
+    // Escape HTML first
+    let html = markdown
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+        
+    // Convert headers
+    html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+    html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+    html = html.replace(/^---$/gim, '<hr style="border: 0; height: 1px; background: #ccc; margin: 15px 0;">');
+    
+    // Convert bold text
+    html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    
+    // Convert bullet lists
+    html = html.replace(/^\* (.*$)/gim, '<li>$1</li>');
+    html = html.replace(/^- (.*$)/gim, '<li>$1</li>');
+    
+    // Convert numbered lists
+    html = html.replace(/^\d+\. (.*$)/gim, '<li>$1</li>');
+    
+    // Split into paragraphs by double newlines
+    const lines = html.split('\n');
+    let formatted = [];
+    let inList = false;
+    
+    for (let line of lines) {
+        line = line.trim();
+        if (!line) continue;
+        
+        if (line.startsWith('<li>')) {
+            if (!inList) {
+                formatted.push('<ul>');
+                inList = true;
+            }
+            formatted.push(line);
+        } else {
+            if (inList) {
+                formatted.push('</ul>');
+                inList = false;
+            }
+            if (line.startsWith('<h1>') || line.startsWith('<h3>') || line.startsWith('<hr')) {
+                formatted.push(line);
+            } else {
+                formatted.push(`<p>${line}</p>`);
+            }
+        }
+    }
+    if (inList) {
+        formatted.push('</ul>');
+    }
+    
+    return formatted.join('\n');
 }
 
 init();

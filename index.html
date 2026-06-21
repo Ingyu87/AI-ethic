@@ -57,9 +57,19 @@
                     </div>
                 </div>
                 <button id="start-btn" class="btn-primary pulse">게임 시작!</button>
-                <p class="keyboard-hint" style="margin-top: 20px;">
+                <p class="keyboard-hint" style="margin-top: 15px;">
                     🎮 <kbd>←</kbd><kbd>→</kbd> 이동 &nbsp; 📱 터치/스와이프
                 </p>
+                <div class="start-footer">
+                    <p class="footer-links">
+                        <span id="link-terms" class="footer-link">이용약관</span> | 
+                        <span id="link-privacy" class="footer-link">개인정보처리방침</span>
+                    </p>
+                    <p class="footer-copyright">
+                        © 2026 AI 윤리 곰돌이 어드벤처. All rights reserved.<br>
+                        정보관리책임자: 백인규 교사 (서울가동초등학교, 02-448-5766)
+                    </p>
+                </div>
             </div>
 
             <div id="quiz-screen" class="screen hidden">
@@ -103,6 +113,15 @@
                         <button id="restart-btn" class="btn-secondary">🔄 다시 하기</button>
                     </div>
                     <p style="margin-top: 15px; font-size: 0.85rem; color: #666;">리포트에서 테마별 분석 및 해설을 확인하세요!</p>
+                </div>
+            </div>
+
+            <!-- Modal Overlay for Policies -->
+            <div id="modal-overlay" class="hidden">
+                <div class="modal-card glass-panel">
+                    <h2 id="modal-title">약관 제목</h2>
+                    <div id="modal-body" class="modal-content-scroll"></div>
+                    <button id="modal-close-btn" class="btn-secondary" style="margin-top: 20px;">닫기</button>
                 </div>
             </div>
         </div>
