@@ -355,7 +355,7 @@ export default class GameCanvas {
     }
 
     getLaneX(lane) {
-        const roadWidth = this.canvas.width * 0.75;
+        const roadWidth = Math.min(600, this.canvas.width * 0.85);
         const roadX = (this.canvas.width - roadWidth) / 2;
         const laneWidth = roadWidth / 3;
         return roadX + (laneWidth * lane) + (laneWidth / 2);
@@ -534,7 +534,7 @@ export default class GameCanvas {
     }
 
     drawRoad(ctx, w, h, theme) {
-        const roadWidth = w * 0.75;
+        const roadWidth = Math.min(600, w * 0.85);
         const roadX = (w - roadWidth) / 2;
         
         // Road shadow/depth
