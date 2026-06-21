@@ -646,3 +646,166 @@ button:active { transform: scale(0.95); }
     word-break: keep-all;
 }
 
+/* Guide screen card layout */
+.guide-card {
+    max-width: 600px;
+    width: 92%;
+    max-height: 85%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 25px;
+}
+
+.guide-intro {
+    font-size: 0.95rem;
+    color: #555;
+    margin-top: 5px;
+    margin-bottom: 15px;
+    word-break: keep-all;
+}
+
+.guide-list-scroll {
+    width: 100%;
+    overflow-y: auto;
+    flex-grow: 1;
+    margin-bottom: 15px;
+    padding-right: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* Individual Guide Card */
+.guide-item {
+    background: rgba(255, 255, 255, 0.6);
+    border-radius: 12px;
+    padding: 15px;
+    text-align: left;
+    border-left: 5px solid #ddd;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.guide-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.guide-badge {
+    font-size: 0.72rem;
+    font-weight: bold;
+    color: white;
+    padding: 3px 8px;
+    border-radius: 20px;
+}
+
+.guide-num {
+    font-family: var(--font-heading);
+    font-size: 0.85rem;
+    color: #e59400;
+}
+
+.guide-item h3 {
+    font-size: 1.05rem;
+    color: #111;
+    margin-bottom: 6px;
+    word-break: keep-all;
+}
+
+.guide-item p {
+    font-size: 0.82rem;
+    color: #444;
+    line-height: 1.5;
+    word-break: keep-all;
+}
+
+/* Category Colors */
+.border-pudo {
+    border-left-color: #FFB347; /* Orange */
+}
+.bg-pudo {
+    background: #FFB347;
+}
+
+.border-safety {
+    border-left-color: #4682B4; /* SteelBlue */
+}
+.bg-safety {
+    background: #4682B4;
+}
+
+.border-transparency {
+    border-left-color: #D4AF37; /* Gold */
+}
+.bg-transparency {
+    background: #D4AF37;
+}
+
+/* Agreement Checkbox Styling */
+.guide-agreement {
+    margin-bottom: 15px;
+    width: 100%;
+}
+
+.agreement-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    cursor: pointer;
+    font-weight: bold;
+    color: #222;
+    font-size: 0.92rem;
+    user-select: none;
+}
+
+.agreement-label input[type="checkbox"] {
+    display: none;
+}
+
+/* Custom checkbox graphic */
+.custom-checkbox {
+    width: 22px;
+    height: 22px;
+    border: 2px solid var(--primary-color);
+    border-radius: 6px;
+    display: inline-block;
+    position: relative;
+    background: white;
+    transition: background 0.2s, border-color 0.2s;
+    flex-shrink: 0;
+}
+
+.agreement-label input[type="checkbox"]:checked + .custom-checkbox {
+    background: var(--primary-color);
+}
+
+.agreement-label input[type="checkbox"]:checked + .custom-checkbox::after {
+    content: "✔";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 0.85rem;
+    font-weight: bold;
+}
+
+.agreement-text {
+    word-break: keep-all;
+    text-align: left;
+}
+
+/* Disabled button styling */
+.btn-primary.disabled, .btn-primary:disabled {
+    background: #ccc !important;
+    box-shadow: 0 6px 0 #999, 0 10px 10px rgba(0,0,0,0.1) !important;
+    color: #666 !important;
+    cursor: not-allowed !important;
+    transform: none !important;
+    animation: none !important;
+}
+
+

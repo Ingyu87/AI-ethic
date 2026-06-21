@@ -31,6 +31,7 @@ const difficultySettings = {
 const ui = {
     screens: {
         start: document.getElementById('start-screen'),
+        guide: document.getElementById('guide-screen'),
         quiz: document.getElementById('quiz-screen'),
         feedback: document.getElementById('feedback-screen'),
         report: document.getElementById('report-screen')
@@ -62,6 +63,7 @@ const ui = {
     },
     btns: {
         start: document.getElementById('start-btn'),
+        guideStart: document.getElementById('guide-start-btn'),
         next: document.getElementById('next-btn'),
         download: document.getElementById('download-btn'),
         restart: document.getElementById('restart-btn')
@@ -77,10 +79,28 @@ let currentQuestion = null;
 function init() {
     gameCanvas = new GameCanvas(canvasEl, state, handleGameEvent);
 
-    ui.btns.start.addEventListener('click', startGame);
+    ui.btns.start.addEventListener('click', () => {
+        showScreen('guide');
+    });
+    ui.btns.guideStart.addEventListener('click', startGame);
     ui.btns.next.addEventListener('click', resumeGame);
     ui.btns.download.addEventListener('click', downloadReport);
     ui.btns.restart.addEventListener('click', () => location.reload());
+
+    // Guide Agreement Checkbox Logic
+    const guideCheck = document.getElementById('guide-check');
+    if (guideCheck) {
+        guideCheck.checked = false; // Reset on load
+        guideCheck.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                ui.btns.guideStart.disabled = false;
+                ui.btns.guideStart.classList.remove('disabled');
+            } else {
+                ui.btns.guideStart.disabled = true;
+                ui.btns.guideStart.classList.add('disabled');
+            }
+        });
+    }
 
     // Footer & Modal Event Listeners
     const linkTerms = document.getElementById('link-terms');
@@ -155,11 +175,22 @@ function handleGlobalKeyboard(e) {
         }
     }
     
-    // Start screen - Enter to start
+    // Start screen - Enter to show guide screen
     if (!ui.screens.start.classList.contains('hidden')) {
         if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
-            startGame();
+            showScreen('guide');
+        }
+    }
+
+    // Guide screen - Enter to start game if checkbox is checked
+    if (!ui.screens.guide.classList.contains('hidden')) {
+        if (e.key === 'Enter' || e.key === ' ') {
+            const guideCheck = document.getElementById('guide-check');
+            if (guideCheck && guideCheck.checked) {
+                e.preventDefault();
+                startGame();
+            }
         }
     }
     
